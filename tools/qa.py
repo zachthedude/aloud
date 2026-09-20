@@ -354,6 +354,7 @@ def main() -> int:
         ("subject-material", f"/space/{space_id}?view=material", True),
         ("subject-map", f"/space/{space_id}?view=map", True),
         ("plan", "/plan", True),
+        ("modes", "/modes", True),
         ("library", "/library", True),
         ("progress", "/progress", True),
         ("settings", "/settings", True),

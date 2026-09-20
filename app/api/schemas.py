@@ -66,6 +66,7 @@ class PreferencesRequest(BaseModel):
     preferred_voice: str | None = Field(default=None, max_length=120, alias="preferredVoice")
     explanation_style: str | None = Field(default=None, alias="explanationStyle")
     onboarded: bool | None = None
+    muted_modes: list[str] | None = Field(default=None, max_length=32, alias="mutedModes")
 
     model_config = {"populate_by_name": True}
 
@@ -160,6 +161,7 @@ def serialise_user(user: User) -> dict[str, Any]:
         "preferredVoice": user.preferred_voice,
         "explanationStyle": user.explanation_style,
         "onboarded": user.onboarded,
+        "mutedModes": user.muted_modes,
         "createdAt": user.created_at.isoformat(),
     }
 

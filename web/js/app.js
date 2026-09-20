@@ -19,6 +19,7 @@ import { welcomeView } from './views/welcome.js';
 import { dashboardView } from './views/dashboard.js';
 import { spacesView, newSpaceView, spaceView } from './views/space.js';
 import { planView } from './views/plan.js';
+import { modesView } from './views/modes.js';
 import { libraryView } from './views/library.js';
 import { progressView } from './views/progress.js';
 import { settingsView } from './views/settings.js';
@@ -116,6 +117,7 @@ route(
   )
 );
 route('/plan', inShell((container, _context, rerender) => planView(container, rerender), { title: 'Study plan' }));
+route('/modes', inShell((container) => modesView(container), { title: 'Ways of working' }));
 route('/library', inShell((container, _context, rerender) => libraryView(container, rerender), { title: 'Library' }));
 route('/progress', inShell((container, _context, rerender) => progressView(container, rerender), { title: 'Progress' }));
 route('/settings', inShell((container) => settingsView(container), { title: 'Settings' }));

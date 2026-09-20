@@ -11,11 +11,13 @@ import { store } from '../core/store.js';
 import { navigate } from '../core/router.js';
 import { api } from '../core/api.js';
 import { notifyError } from '../core/feedback.js';
+import { guide } from './guide.js';
 
 const DESTINATIONS = [
   { path: '/app', label: 'Home', icon: 'home' },
   { path: '/spaces', label: 'Subjects', icon: 'layers' },
   { path: '/plan', label: 'Study plan', icon: 'route' },
+  { path: '/modes', label: 'Ways of working', icon: 'grid' },
   { path: '/library', label: 'Library', icon: 'library' },
   { path: '/progress', label: 'Progress', icon: 'chart' },
 ];
@@ -194,7 +196,7 @@ export function tabbar(currentPath) {
             'aria-current': isCurrent(item.path, currentPath) ? 'page' : null,
           },
           icon(item.icon, { size: 19 }),
-          h('span', null, item.label === 'Study plan' ? 'Plan' : item.label)
+          h('span', null, ({ 'Study plan': 'Plan', 'Ways of working': 'Modes' }[item.label] || item.label))
         )
       )
     )
@@ -213,8 +215,20 @@ export function shell(currentPath, content) {
       topbar(),
       h('main', { class: 'shell-main', id: 'main' }, h('div', { class: 'container' }, content))
     ),
-    tabbar(currentPath)
+    tabbar(currentPath),
+    // Hum lives outside the scrolling main, so it stays put while a page
+    // moves under it and is reached last in the tab order.
+    guideFor(currentPath)
   );
+}
+
+/** One guide, kept alive across navigations so it does not blink on route change. */
+let livingGuide = null;
+
+function guideFor(currentPath) {
+  if (livingGuide === null) livingGuide = guide({ onClose: () => { livingGuide = null; } });
+  if (livingGuide) livingGuide.__say(currentPath);
+  return livingGuide;
 }
 
 export { signOut };

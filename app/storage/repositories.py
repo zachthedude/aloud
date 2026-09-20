@@ -102,6 +102,7 @@ class UserRepository(_Base):
             preferred_voice=row["preferred_voice"],
             explanation_style=row["explanation_style"],
             onboarded=bool(row["onboarded"]),
+            muted_modes=from_json(row["muted_modes"]),
         )
 
     def create(self, user: User) -> User:
@@ -137,6 +138,7 @@ class UserRepository(_Base):
         explanation_style: str | None = None,
         display_name: str | None = None,
         onboarded: bool | None = None,
+        muted_modes: list[str] | None = None,
     ) -> None:
         fields: list[str] = []
         values: list[Any] = []
@@ -145,6 +147,7 @@ class UserRepository(_Base):
             ("preferred_voice", preferred_voice),
             ("explanation_style", explanation_style),
             ("display_name", display_name),
+            ("muted_modes", None if muted_modes is None else to_json(muted_modes)),
         ):
             if value is not None:
                 fields.append(f"{column} = ?")

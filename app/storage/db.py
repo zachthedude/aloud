@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS users (
     preferred_speed REAL NOT NULL DEFAULT 1.0,
     preferred_voice TEXT NOT NULL DEFAULT '',
     explanation_style TEXT NOT NULL DEFAULT 'balanced',
-    onboarded       INTEGER NOT NULL DEFAULT 0
+    onboarded       INTEGER NOT NULL DEFAULT 0,
+    muted_modes     TEXT NOT NULL DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -299,6 +300,8 @@ def _migrate(connection: sqlite3.Connection) -> None:
     #    by marks times weakness and say why it is skipping something.
     _add_column(connection, "concepts", "exam_weight", "REAL NOT NULL DEFAULT 0")
     _add_column(connection, "concepts", "weight_basis", "TEXT NOT NULL DEFAULT ''")
+    # 4: which crunch modes a student has switched off for themselves.
+    _add_column(connection, "users", "muted_modes", "TEXT NOT NULL DEFAULT '[]'")
 
 
 class Database:

@@ -376,3 +376,108 @@
 .role-past_paper { color: var(--brass-deep); border-color: var(--brass-line); }
 .role-mark_scheme { color: var(--mint-deep, var(--brass-deep)); border-color: var(--mint-line); }
 .role-syllabus { color: var(--accent, var(--ink-soft)); }
+
+/* -------------------------------------------------------------------------
+   Ways of working.
+
+   Sixteen modes on one screen, including the ones still being built. The
+   grid is deliberately plain: this is a list a stressed person scans, not a
+   gallery. State is carried by one colour and one word, never by colour
+   alone, and a mode that does not exist yet is visibly quieter than one that
+   does without being so faint it cannot be read.
+   ---------------------------------------------------------------------- */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--chalk-line);
+  border-radius: var(--radius-lg);
+  background: var(--chalk-raised);
+  transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out);
+}
+.mode-card:has(.mode-switch:hover),
+.mode-card:has(.mode-switch:focus-visible) { border-color: var(--ink-faint); }
+.mode-card:has(.mode-switch:focus-visible) { box-shadow: var(--focus-ring); }
+
+.mode-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mode-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem; height: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--chalk-sunk);
+  color: var(--ink-soft);
+  flex: none;
+}
+
+.mode-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-snug);
+  min-width: 0;
+}
+/* The whole card is the hit target: the label stretches over it. */
+label.mode-name::after { content: ""; position: absolute; inset: 0; cursor: pointer; }
+
+.mode-state {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.mode-blurb {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--ink-soft);
+}
+.mode-note {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+/* The switch sits under the card and is reached by the label, so it keeps
+   real checkbox semantics and keyboard behaviour. */
+.mode-switch {
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.mode-card[data-state="on"] { border-color: var(--brass-line); }
+.mode-card[data-state="on"] .mode-icon { background: var(--brass-wash, var(--chalk-sunk)); color: var(--brass-deep); }
+.mode-card[data-state="on"] .mode-state { color: var(--brass-deep); }
+
+.mode-card[data-state="off"] .mode-icon,
+.mode-card[data-state="off"] .mode-name { opacity: 0.65; }
+
+.mode-card[data-state="blocked"] .mode-state { color: var(--trouble-text); }
+
+.mode-card[data-state="coming"] {
+  background: transparent;
+  border-style: dashed;
+}
+.mode-card[data-state="coming"] .mode-icon { opacity: 0.5; }

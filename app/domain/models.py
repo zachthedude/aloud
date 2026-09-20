@@ -223,6 +223,9 @@ class User:
     preferred_voice: str = ""
     explanation_style: str = "balanced"  # balanced | concrete | formal
     onboarded: bool = False
+    # Modes the student has switched off. Storing the exceptions rather
+    # than the selection means a mode added later is on by default.
+    muted_modes: list[str] = field(default_factory=list)
 
 
 @dataclass

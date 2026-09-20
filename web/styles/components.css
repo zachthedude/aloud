@@ -517,3 +517,110 @@
   background: none;
   font-family: inherit;
 }
+
+/* -------------------------------------------------------------------------
+   Hum, the guide.
+
+   Sits in the bottom corner, above the tab bar and clear of the mini player.
+   Quiet by default: a small face and one line. It is the only part of the
+   interface that offers to be listened to rather than read, which is the
+   point of it in a product used with the screen off.
+   ---------------------------------------------------------------------- */
+.guide {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 60;                 /* under the mini player (70), over the page */
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  max-width: min(22rem, calc(100vw - var(--space-6)));
+  pointer-events: none;        /* the page keeps working around it */
+}
+.guide > * { pointer-events: auto; }
+
+@media (max-width: 900px) {
+  .guide { bottom: calc(var(--tabbar-height) + var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+}
+/* Step above the mini player when a lesson is running. */
+body:has(.miniplayer) .guide { bottom: calc(var(--space-4) + 4.6rem); }
+@media (max-width: 900px) {
+  body:has(.miniplayer) .guide {
+    bottom: calc(var(--tabbar-height) + 4.6rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.guide-bubble {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--chalk-line);
+  border-radius: var(--radius-lg);
+  background: var(--chalk-raised);
+  box-shadow: var(--shadow-soft, 0 10px 30px rgb(0 0 0 / 0.10));
+  transform-origin: bottom right;
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+}
+.guide[data-open="false"] .guide-bubble {
+  opacity: 0;
+  transform: scale(0.94) translateY(6px);
+  /* Hidden from the keyboard and screen readers too, not just from sight. */
+  visibility: hidden;
+  position: absolute;
+  right: 3.4rem;
+  bottom: 0;
+  width: min(20rem, calc(100vw - var(--space-6)));
+}
+
+.guide-line {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--ink);
+}
+
+.guide-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+.guide-badge {
+  flex: none;
+  width: 2.9rem; height: 2.9rem;
+  display: grid; place-items: center;
+  padding: 0;
+  border: 1px solid var(--chalk-line);
+  border-radius: var(--radius-full);
+  background: var(--chalk-raised);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft, 0 10px 30px rgb(0 0 0 / 0.10));
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+.guide-badge:hover { border-color: var(--ink-faint); transform: translateY(-1px); }
+.guide-badge:active { transform: scale(0.96); }
+.guide-badge:focus-visible { box-shadow: var(--focus-ring); }
+
+.guide-face { width: 1.9rem; height: 1.9rem; overflow: visible; }
+.guide-face-ring { fill: none; stroke: currentColor; stroke-width: 1.3; opacity: 0.28; }
+.guide-eye { fill: currentColor; transform-origin: center; }
+.guide-mouth { stroke: var(--brass-deep); stroke-width: 2; }
+
+/* A slow blink, so it reads as attentive rather than animated at you. It
+   stops entirely while speaking, when the mouth is doing the work. */
+@media (prefers-reduced-motion: no-preference) {
+  .guide-eye { animation: guide-blink 7s var(--ease-out) infinite; }
+  .guide[data-speaking="true"] .guide-mouth { animation: guide-speak 900ms var(--ease-out) infinite; }
+  .guide[data-speaking="true"] .guide-eye { animation: none; }
+}
+@keyframes guide-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.12); }
+}
+@keyframes guide-speak {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.55); }
+}
+.guide-mouth { transform-origin: center; transform-box: fill-box; }

@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 
 from ..domain.models import User, new_id
+from ..services.modes import catalogue as mode_catalogue
 from .deps import (
     SESSION_COOKIE,
     Container,
@@ -117,6 +118,27 @@ def me(
     }
 
 
+@router.get("/modes")
+def modes(
+    user: User = Depends(current_user),
+    container: Container = Depends(get_container),
+) -> dict:
+    """Every crunch mode, including the ones not built yet.
+
+    Computed here rather than in the client so there is one answer to "can I
+    use this", and the interface can never offer a mode the server refuses.
+    """
+    has_key = bool(container.settings.anthropic_api_key)
+    return {
+        "modes": mode_catalogue(
+            flags=container.settings.features,
+            has_model=has_key,
+            has_vision=has_key,
+            muted=set(user.muted_modes),
+        )
+    }
+
+
 @router.patch("/me")
 def update_me(
     payload: PreferencesRequest,
@@ -130,6 +152,7 @@ def update_me(
         preferred_voice=payload.preferred_voice,
         explanation_style=payload.explanation_style,
         onboarded=payload.onboarded,
+        muted_modes=payload.muted_modes,
     )
     updated = container.repos.users.by_id(user.id)
     return {"user": serialise_user(updated)} if updated else {"user": serialise_user(user)}

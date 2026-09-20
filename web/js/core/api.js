@@ -103,6 +103,7 @@ export const api = {
     signIn: (payload) => post('/api/auth/signin', payload),
     signOut: () => post('/api/auth/signout', {}),
     updateMe: (payload) => patch('/api/auth/me', payload),
+    modes: () => get('/api/auth/modes'),
   },
 
   spaces: {
