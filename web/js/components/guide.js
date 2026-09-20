@@ -172,7 +172,11 @@ export function guide({ onClose } = {}) {
     )
   );
 
-  if (remembered() === 'small') {
+  // On a phone the bubble would cover a card, so Hum starts as just a face
+  // until asked. On a wide screen there is room for it to say hello.
+  const startsSmall = remembered() === 'small'
+    || (remembered() === null && window.innerWidth < 700);
+  if (startsSmall) {
     node.dataset.open = 'false';
     badge.setAttribute('aria-expanded', 'false');
   }
