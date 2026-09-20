@@ -1,0 +1,25 @@
+# --- Core runtime (required) ---
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+python-multipart==0.0.32
+pydantic==2.13.5
+email-validator==2.3.0
+
+# --- Document ingestion (required for PDF/DOCX/PPTX) ---
+pypdf==6.18.1
+python-docx==1.2.0
+python-pptx==1.0.2
+
+# --- Optional: downloadable audio files (server-side TTS) ---
+# Live in-lesson narration uses the browser's own speech engine and needs none
+# of these. These are only for generating .mp3 files you can download.
+gTTS==2.5.4          # network TTS -> mp3
+pyttsx3==2.99        # offline Windows SAPI TTS -> wav
+
+# --- Optional: server-side speech recognition fallback ---
+# The browser handles live answers. This is the fallback for uploaded audio
+# when the browser has no speech recognition (Firefox, Safari).
+faster-whisper==1.2.1
+
+# --- Optional: hosted AI teacher (set ANTHROPIC_API_KEY to enable) ---
+# No SDK needed - the Anthropic provider speaks HTTP directly via urllib.

@@ -1,0 +1,266 @@
+/* =========================================================================
+   Aloud - design tokens
+
+   Two ideas hold this system together.
+
+   1. The listening room is always deeper than the app around it. In light
+      mode that reads as the lights going down; in dark mode as the room
+      closing in. Either way, starting a lesson changes where you are.
+
+   2. Colour says who is speaking. Brass while the teacher talks, mint while
+      it is the student's turn, neutral while thinking. The conversational
+      state machine is legible without reading a word, which matters in a
+      product designed to be listened to rather than watched.
+
+   Anything not covered by those two ideas stays quiet.
+
+   THEMING. `js/theme.js` resolves light / dark / system into an explicit
+   `data-theme` on <html> before first paint, so this file needs one light
+   block and one dark block rather than a media query duplicating both. The
+   app is an ES-module client, so relying on that script costs nothing that
+   was not already required.
+   ========================================================================= */
+
+@import url("/assets/fonts/newsreader.css");
+@import url("/assets/fonts/figtree.css");
+
+:root {
+  /* --- Ground ---------------------------------------------------------- */
+  --chalk:        #efefea;   /* the app's paper */
+  --chalk-raised: #f7f7f4;   /* cards, inputs, anything lifted off the page */
+  --chalk-sunk:   #e6e6e0;   /* wells, tracks, inset areas */
+  --chalk-line:   #d8d8d1;   /* hairlines */
+  --chalk-line-strong: #c2c2b9;
+
+  --ink:          #1b2430;   /* body text: a deep slate-navy, never pure black */
+  --ink-soft:     #4a5563;   /* secondary text */
+  --ink-faint:    #767f8c;   /* tertiary, captions, metadata */
+  --ink-ghost:    #a3aab4;   /* disabled, placeholders */
+
+  /* --- The listening room ---------------------------------------------- */
+  --night:        #10141f;   /* player ground: chromatic indigo, not black */
+  --night-raised: #182033;
+  --night-line:   #27324a;
+  --night-text:   #eceef4;
+  --night-soft:   #a8b1c6;
+  --night-faint:  #6d7794;
+
+  /* --- Who holds the floor --------------------------------------------- */
+  --brass:        #d9a441;   /* the teacher is speaking */
+  --brass-deep:   #a87a22;
+  --brass-wash:   #f6ecd6;
+  --brass-glow:   rgba(217, 164, 65, 0.28);
+
+  --mint:         #3fb9a0;   /* your turn */
+  --mint-deep:    #227f6c;
+  --mint-wash:    #dcf1ec;
+  --mint-glow:    rgba(95, 214, 192, 0.26);
+
+  --quiet:        #7b86c4;   /* thinking, processing */
+  --quiet-wash:   #e7e9f6;
+
+  /* --- Meaning --------------------------------------------------------- */
+  --trouble:      #c25a4a;   /* errors. Never used for a wrong answer. */
+  --trouble-wash: #f7e4e0;
+  --trouble-text: #8f3b2e;   /* readable on trouble-wash */
+  --trouble-line: #e8c4bc;
+
+  /* Hairlines for tinted notices, so each keeps its hue at its own weight. */
+  --brass-line:   #e8d5ab;
+  --mint-line:    #b8e0d6;
+  --quiet-text:   #4e56a0;
+
+  /* The primary button darkens on hover in light, lightens in dark. */
+  --ink-hover:    #0f1620;
+
+  /* Toasts sit above everything and stay legible in both themes rather than
+     inverting with the page. */
+  --toast-bg:     #1b2430;
+  --toast-text:   #eceef4;
+  --toast-trouble-bg: #8f3b2e;
+
+  /* Mastery. Deliberately a single hue deepening, not a red-to-green ramp:
+     a student who is revisiting something has not failed at it. */
+  --mastery-0: #c8c8c0;
+  --mastery-1: #b9a173;
+  --mastery-2: #8fa9a0;
+  --mastery-3: #4e8d7c;
+  --mastery-4: #2f6f5e;
+
+  /* Subject identity. Muted enough to sit together on one dashboard. */
+  --accent-0: #4a6fa5;
+  --accent-1: #8a5a8f;
+  --accent-2: #3f7d6e;
+  --accent-3: #a9683f;
+  --accent-4: #5c6a9c;
+  --accent-5: #7b7f42;
+
+  /* --- Type ------------------------------------------------------------ */
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans:  "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* A modular scale at roughly 1.25, rounded to whole pixels. */
+  --text-2xs: 0.6875rem;  /* 11px */
+  --text-xs:  0.75rem;    /* 12 */
+  --text-sm:  0.8125rem;  /* 13 */
+  --text-base:0.9375rem;  /* 15 - body */
+  --text-md:  1.0625rem;  /* 17 */
+  --text-lg:  1.25rem;    /* 20 */
+  --text-xl:  1.5rem;     /* 24 */
+  --text-2xl: 1.875rem;   /* 30 */
+  --text-3xl: 2.375rem;   /* 38 */
+  --text-4xl: 3rem;       /* 48 */
+  --text-5xl: 3.75rem;    /* 60 */
+
+  --leading-tight: 1.15;
+  --leading-snug:  1.35;
+  --leading-normal:1.55;
+  --leading-relaxed: 1.7;   /* serif body wants more room */
+
+  --tracking-tight: -0.02em;
+  --tracking-snug:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:  0.02em;
+
+  /* --- Space: a 4px base, named by use rather than by number ----------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3.5rem;
+  --space-9: 5rem;
+  --space-10: 7rem;
+
+  /* --- Radius: varied by role, so shape carries hierarchy -------------- */
+  --radius-sm:   4px;    /* tags, chips */
+  --radius-md:   8px;    /* inputs, small controls */
+  --radius-lg:   14px;   /* cards */
+  --radius-xl:   22px;   /* the primary card, panels */
+  --radius-full: 999px;  /* transport controls */
+
+  /* --- Elevation: light and sparing. Most grouping is done with space
+         and hairlines, so a shadow means something when it appears. ----- */
+  --shadow-sm: 0 1px 2px rgba(27, 36, 48, 0.06);
+  --shadow-md: 0 2px 10px rgba(27, 36, 48, 0.07), 0 1px 2px rgba(27, 36, 48, 0.05);
+  --shadow-lg: 0 12px 32px rgba(27, 36, 48, 0.11), 0 2px 6px rgba(27, 36, 48, 0.05);
+  --shadow-night: 0 18px 50px rgba(0, 0, 0, 0.45);
+
+  /* --- Motion ---------------------------------------------------------- */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0.05, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+
+  /* --- Layout ---------------------------------------------------------- */
+  --rail-width: 224px;
+  --content-max: 1080px;
+  --reading-max: 62ch;      /* under 80 characters, per the type scale */
+  --header-height: 60px;
+  --miniplayer-height: 68px;
+  --tabbar-height: 62px;
+
+  --focus-ring: 0 0 0 2px var(--chalk), 0 0 0 4px var(--ink);
+}
+
+/* -------------------------------------------------------------------------
+   Dark.
+
+   Not an inversion. The same chalk-and-ink relationship, read at night: a
+   cool charcoal ground that stays clearly lighter than the listening room,
+   so entering a lesson is still a change of place. Brass and mint lift a
+   little, because the same hue that reads warm on paper reads muddy on
+   charcoal, and the accent has to keep carrying the turn state.
+   ---------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --chalk:        #171a21;
+  --chalk-raised: #1e222b;
+  --chalk-sunk:   #12151b;
+  --chalk-line:   #2a2f3a;
+  --chalk-line-strong: #3b4251;
+
+  --ink:          #e8eaef;
+  --ink-soft:     #aeb5c2;
+  --ink-faint:    #848c9c;
+  --ink-ghost:    #5c6474;
+
+  --brass:        #e0ad4d;
+  --brass-deep:   #eec278;
+  --brass-wash:   #2f2717;
+  --brass-glow:   rgba(224, 173, 77, 0.22);
+
+  --mint:         #4fcfb4;
+  --mint-deep:    #7fe3cd;
+  --mint-wash:    #12302b;
+  --mint-glow:    rgba(79, 207, 180, 0.2);
+
+  --quiet:        #8e98d6;
+  --quiet-wash:   #1f2333;
+
+  --trouble:      #e0796a;
+  --trouble-wash: #33201c;
+  --trouble-text: #f0a99c;
+  --trouble-line: #4d2f28;
+
+  --brass-line:   #4a3c1f;
+  --mint-line:    #1e4a41;
+  --quiet-text:   #aab4ec;
+
+  --ink-hover:    #ffffff;
+
+  --toast-bg:     #2c333f;
+  --toast-text:   #eceef4;
+  --toast-trouble-bg: #a8493a;
+
+  /* Mastery keeps its single-hue deepening, lifted to stay legible. */
+  --mastery-0: #454b58;
+  --mastery-1: #c2a869;
+  --mastery-2: #7fa79c;
+  --mastery-3: #55b294;
+  --mastery-4: #6ecfab;
+
+  /* Subject identity, lifted for a dark ground. */
+  --accent-0: #7ea3d8;
+  --accent-1: #c193c6;
+  --accent-2: #6fbfa8;
+  --accent-3: #dd9a6b;
+  --accent-4: #8f9bd4;
+  --accent-5: #b4b972;
+
+  /* On a dark ground a shadow reads as depth only if it is much darker. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+
+  --focus-ring: 0 0 0 2px var(--chalk), 0 0 0 4px var(--ink);
+  color-scheme: dark;
+}
+
+/* The player, and anything that should feel like it belongs in the same room. */
+.night {
+  --chalk: var(--night);
+  --chalk-raised: var(--night-raised);
+  --chalk-sunk: #0b0e16;
+  --chalk-line: var(--night-line);
+  --chalk-line-strong: #38456280;
+  --ink: var(--night-text);
+  --ink-soft: var(--night-soft);
+  --ink-faint: var(--night-faint);
+  --ink-ghost: #56607d;
+  --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: var(--shadow-night);
+  --focus-ring: 0 0 0 2px var(--night), 0 0 0 4px var(--night-text);
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+}
