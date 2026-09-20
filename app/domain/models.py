@@ -40,6 +40,20 @@ class ResourceKind(str, Enum):
     AUDIO = "audio"
 
 
+class ResourceRole(str, Enum):
+    """What a document is for, which decides which modes may read it.
+
+    Notes is the default and the safe one. The other three are only claimed on
+    positive evidence: the examiner must never mark against a "mark scheme"
+    that is really a set of revision notes.
+    """
+
+    NOTES = "notes"
+    PAST_PAPER = "past_paper"
+    MARK_SCHEME = "mark_scheme"
+    SYLLABUS = "syllabus"
+
+
 class ProcessingStatus(str, Enum):
     """Lifecycle of a resource moving through the ingestion pipeline."""
 
@@ -231,6 +245,7 @@ class Resource:
     space_id: str = ""
     title: str = ""
     kind: ResourceKind = ResourceKind.TEXT
+    role: ResourceRole = ResourceRole.NOTES
     original_filename: str = ""
     stored_path: str = ""
     source_url: str = ""

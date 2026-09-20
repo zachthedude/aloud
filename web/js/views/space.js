@@ -481,6 +481,14 @@ export async function spaceView(mountPoint, spaceId, query, rerender) {
               { class: 'grid grid-2' },
               data.resources.map((resource) =>
                 resourceCard(resource, {
+                  onRole: async (role) => {
+                    try {
+                      await api.resources.setRole(spaceId, resource.id, role);
+                      await refresh({ keepTab: 'material' });
+                    } catch (error) {
+                      notifyError(error);
+                    }
+                  },
                   onRemove: async () => {
                     const ok = await confirmDialog({
                       title: `Remove ${resource.title}?`,

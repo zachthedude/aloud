@@ -332,3 +332,47 @@
   .plan-next .btn { width: 100%; }
   .row-item { padding-inline: 0; }
 }
+
+/* -------------------------------------------------------------------------
+   What a document is for.
+
+   The tag reads as a label, not a form control, because most of the time the
+   guess is right and the student is only glancing at it. The select sits
+   invisibly on top so correcting it is one click, and keyboard and screen
+   reader users get a real <select> rather than a menu we invented.
+   ---------------------------------------------------------------------- */
+.role-chip {
+  position: relative;
+  padding-right: 1.4rem;
+  cursor: pointer;
+}
+.role-chip::after {
+  content: "";
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  width: 0.34rem; height: 0.34rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-70%) rotate(45deg);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.role-chip:hover { background: var(--chalk-sunk); }
+.role-select {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.role-select:focus-visible + *, .role-chip:has(.role-select:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+/* Past papers, mark schemes and the syllabus each unlock a mode, so they are
+   worth telling apart at a glance. Notes stay quiet: they are the default. */
+.role-past_paper { color: var(--brass-deep); border-color: var(--brass-line); }
+.role-mark_scheme { color: var(--mint-deep, var(--brass-deep)); border-color: var(--mint-line); }
+.role-syllabus { color: var(--accent, var(--ink-soft)); }

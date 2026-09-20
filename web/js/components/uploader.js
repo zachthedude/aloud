@@ -294,7 +294,43 @@ const SOURCE_ICON = {
 };
 
 /** One resource as a card, with its processing state and a way to remove it. */
-export function resourceCard(resource, { onRemove } = {}) {
+/**
+ * What a document is for, in the student's words.
+ *
+ * The four roles are not decoration: the examiner will only mark against a
+ * mark scheme, the pattern hunter only reads past papers, and triage weights
+ * topics by what the syllabus says they are worth. A wrong tag quietly
+ * disables a feature, so the tag is shown on every card and is one click from
+ * being corrected.
+ */
+export const ROLES = [
+  ['notes', 'Notes'],
+  ['past_paper', 'Past paper'],
+  ['mark_scheme', 'Mark scheme'],
+  ['syllabus', 'Syllabus'],
+];
+
+const ROLE_LABEL = Object.fromEntries(ROLES);
+
+function roleControl(resource, onRole) {
+  const label = ROLE_LABEL[resource.role] || 'Notes';
+  if (!onRole) return h('span', { class: 'chip chip-quiet' }, label);
+
+  const select = h(
+    'select',
+    {
+      class: 'role-select',
+      'aria-label': `What is ${resource.title || 'this file'}?`,
+      onChange: (event) => onRole(event.target.value),
+    },
+    ROLES.map(([value, text]) =>
+      h('option', { value, selected: value === resource.role }, text)
+    )
+  );
+  return h('span', { class: `chip role-chip role-${resource.role || 'notes'}` }, label, select);
+}
+
+export function resourceCard(resource, { onRemove, onRole } = {}) {
   const details = [
     resource.pageCount ? `${resource.pageCount} pages` : '',
     resource.sectionCount ? `${resource.sectionCount} passages` : '',
@@ -345,6 +381,7 @@ export function resourceCard(resource, { onRemove } = {}) {
       'div',
       { class: 'row', style: { marginTop: 'var(--space-3)', gap: 'var(--space-2)' } },
       h('span', { class: statusClass }, statusLabel),
+      roleControl(resource, onRole),
       resource.sourceUrl
         ? h(
             'a',

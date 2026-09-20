@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS resources (
     space_id          TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
     title             TEXT NOT NULL,
     kind              TEXT NOT NULL,
+    role              TEXT NOT NULL DEFAULT 'notes',
     original_filename TEXT NOT NULL DEFAULT '',
     stored_path       TEXT NOT NULL DEFAULT '',
     source_url        TEXT NOT NULL DEFAULT '',
@@ -274,6 +275,26 @@ CREATE INDEX IF NOT EXISTS idx_jobs_space ON jobs(space_id, created_at DESC);
 """
 
 
+def _add_column(connection: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    """Add a column if it is not already there.
+
+    `CREATE TABLE IF NOT EXISTS` builds new databases but never changes an
+    existing one, so a column added to the schema has to be added to databases
+    that predate it too. This is idempotent, which is the only property a
+    migration this small needs.
+    """
+    existing = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+    if column not in existing:
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+
+def _migrate(connection: sqlite3.Connection) -> None:
+    """Bring an older database up to SCHEMA_VERSION."""
+    # 2: every resource carries a role, so the examiner can refuse to mark
+    #    without a mark scheme and the pattern hunter can find the papers.
+    _add_column(connection, "resources", "role", "TEXT NOT NULL DEFAULT 'notes'")
+
+
 class Database:
     """Owns the SQLite file and hands out connections."""
 
@@ -298,6 +319,7 @@ class Database:
             connection.executescript(SCHEMA)
             version = connection.execute("PRAGMA user_version").fetchone()[0]
             if version < SCHEMA_VERSION:
+                _migrate(connection)
                 connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     @contextmanager

@@ -32,6 +32,7 @@ from ..domain.models import (
     QuestionKind,
     Resource,
     ResourceKind,
+    ResourceRole,
     ResourceSection,
     SectionKind,
     SpaceStatus,
@@ -289,6 +290,7 @@ class ResourceRepository(_Base):
         return Resource(
             id=row["id"], space_id=row["space_id"], title=row["title"],
             kind=_enum(ResourceKind, row["kind"], ResourceKind.TEXT),
+            role=_enum(ResourceRole, row["role"], ResourceRole.NOTES),
             original_filename=row["original_filename"], stored_path=row["stored_path"],
             source_url=row["source_url"], byte_size=row["byte_size"],
             page_count=row["page_count"], section_count=row["section_count"],
@@ -300,17 +302,25 @@ class ResourceRepository(_Base):
     def create(self, resource: Resource) -> Resource:
         with self.db.writer() as connection:
             connection.execute(
-                """INSERT INTO resources (id, space_id, title, kind, original_filename, stored_path,
-                                          source_url, byte_size, page_count, section_count,
-                                          word_count, status, error, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO resources (id, space_id, title, kind, role, original_filename,
+                                          stored_path, source_url, byte_size, page_count,
+                                          section_count, word_count, status, error, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (resource.id, resource.space_id, resource.title, resource.kind.value,
+                 resource.role.value,
                  resource.original_filename, resource.stored_path, resource.source_url,
                  resource.byte_size, resource.page_count, resource.section_count,
                  resource.word_count, resource.status.value, resource.error,
                  to_iso(resource.created_at)),
             )
         return resource
+
+    def set_role(self, resource_id: str, role: ResourceRole) -> None:
+        """Correct what a document is. The student always gets the last word."""
+        with self.db.writer() as connection:
+            connection.execute(
+                "UPDATE resources SET role = ? WHERE id = ?", (role.value, resource_id)
+            )
 
     def list_for_space(self, space_id: str) -> list[Resource]:
         with self.db.reader() as connection:

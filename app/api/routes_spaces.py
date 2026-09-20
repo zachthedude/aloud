@@ -17,11 +17,13 @@ from ..domain.models import (
 )
 from ..services.curriculum_service import NotEnoughMaterial
 from ..services.documents import pipeline
+from ..services.documents.roles import guess_role
 from ..services.documents.base import UnreadableDocument, UnsupportedDocument
 from ..services.jobs import job_to_dict
 from .deps import Container, current_user, get_container, owned_space
 from .schemas import (
     NoteResourceRequest,
+    ResourceRoleRequest,
     SpaceRequest,
     UrlResourceRequest,
     serialise_concept,
@@ -293,6 +295,7 @@ async def upload_resource(
         space_id=space_id,
         title=(title.strip() or display.rsplit(".", 1)[0])[:120],
         kind=pipeline.kind_for(extension),
+        role=guess_role(file.filename or ""),
         original_filename=display,
         stored_path=str(stored),
         byte_size=size,
@@ -369,6 +372,28 @@ def add_note_resource(
     container.repos.resources.create(resource)
     container.repos.spaces.touch(space_id)
     return {"resource": serialise_resource(resource)}
+
+
+@router.patch("/{space_id}/resources/{resource_id}")
+def set_resource_role(
+    space_id: str,
+    resource_id: str,
+    payload: ResourceRoleRequest,
+    user: User = Depends(current_user),
+    container: Container = Depends(get_container),
+) -> dict:
+    """Correct what a document is.
+
+    The guess on upload reads a filename and a first page, which is enough to
+    be useful and not enough to be certain. The student has the last word,
+    because the examiner will only mark against something tagged mark scheme.
+    """
+    owned_space(space_id, user, container)
+    resource = container.repos.resources.get(resource_id)
+    if resource is None or resource.space_id != space_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such file.")
+    container.repos.resources.set_role(resource_id, payload.role)
+    return {"resource": serialise_resource(container.repos.resources.get(resource_id))}
 
 
 @router.delete("/{space_id}/resources/{resource_id}")

@@ -124,6 +124,8 @@ export const api = {
     addUrl: (spaceId, url) => post(`/api/spaces/${spaceId}/resources/url`, { url }),
     addNote: (spaceId, payload) => post(`/api/spaces/${spaceId}/resources/note`, payload),
     remove: (spaceId, resourceId) => del(`/api/spaces/${spaceId}/resources/${resourceId}`),
+    setRole: (spaceId, resourceId, role) =>
+      patch(`/api/spaces/${spaceId}/resources/${resourceId}`, { role }),
   },
 
   lessons: {

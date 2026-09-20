@@ -239,6 +239,40 @@ class TestUploads:
         assert status == 201
         assert payload["resource"]["kind"] == "note"
 
+    def test_an_upload_is_tagged_by_its_filename(self, signed_in: Client, space: str):
+        status, payload = signed_in.upload(
+            f"/api/spaces/{space}/resources", "9702_s22_ms_12.txt",
+            b"Mark scheme for the May June 2022 series. " * 4,
+        )
+        assert status == 201
+        assert payload["resource"]["role"] == "mark_scheme"
+
+    def test_an_ordinary_upload_is_notes(self, signed_in: Client, space: str):
+        _status, payload = signed_in.upload(
+            f"/api/spaces/{space}/resources", "chapter-4.txt", b"Forces and motion. " * 20
+        )
+        assert payload["resource"]["role"] == "notes"
+
+    def test_the_student_can_correct_the_role(self, signed_in: Client, space: str):
+        _status, payload = signed_in.upload(
+            f"/api/spaces/{space}/resources", "scan001.txt", b"Forces and motion. " * 20
+        )
+        resource_id = payload["resource"]["id"]
+        status, payload = signed_in.patch(
+            f"/api/spaces/{space}/resources/{resource_id}", {"role": "past_paper"}
+        )
+        assert status == 200
+        assert payload["resource"]["role"] == "past_paper"
+
+    def test_an_invented_role_is_refused(self, signed_in: Client, space: str):
+        _status, payload = signed_in.upload(
+            f"/api/spaces/{space}/resources", "scan002.txt", b"Forces and motion. " * 20
+        )
+        resource_id = payload["resource"]["id"]
+        assert signed_in.patch(
+            f"/api/spaces/{space}/resources/{resource_id}", {"role": "homework"}
+        )[0] == 422
+
     def test_notes_that_are_too_short_are_refused(self, signed_in: Client, space: str):
         assert signed_in.post(
             f"/api/spaces/{space}/resources/note", {"text": "too short"}

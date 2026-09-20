@@ -27,6 +27,7 @@ from ..domain.models import (
     MasteryRecord,
     Question,
     Resource,
+    ResourceRole,
     StudyPlanItem,
     TeacherMessage,
     User,
@@ -94,6 +95,12 @@ class UrlResourceRequest(BaseModel):
 class NoteResourceRequest(BaseModel):
     title: str = Field(default="", max_length=120)
     text: str = Field(min_length=40, max_length=200_000)
+
+
+class ResourceRoleRequest(BaseModel):
+    """Correcting what a document is. Pydantic rejects anything not a role."""
+
+    role: ResourceRole
 
 
 class PlaybackRequest(BaseModel):
@@ -188,6 +195,7 @@ def serialise_resource(resource: Resource) -> dict[str, Any]:
         "id": resource.id,
         "title": resource.title,
         "kind": resource.kind.value,
+        "role": resource.role.value,
         "filename": resource.original_filename,
         "sourceUrl": resource.source_url,
         "byteSize": resource.byte_size,

@@ -22,12 +22,14 @@ from ..domain.models import (
     ProcessingStatus,
     Question,
     Resource,
+    ResourceRole,
     ResourceSection,
     SectionKind,
     SpaceStatus,
     new_id,
 )
 from .documents import pipeline
+from .documents.roles import guess_role
 from .documents.base import UnreadableDocument, UnsupportedDocument
 from .jobs import JobHandle, Step
 from .providers.base import LessonDraft, TeachingEngine
@@ -79,6 +81,16 @@ class CurriculumService:
             raise UnreadableDocument(message)
 
         repos.sections.add_many(sections)
+        # The filename guess was made before anything had been read. Now that
+        # there is text, a document that looked like plain notes may announce
+        # itself on its first page. Only ever an upgrade from the default, so
+        # a role the student set by hand is never overwritten.
+        if resource.role is ResourceRole.NOTES:
+            opening = " ".join(section.text for section in sections[:2])
+            refined = guess_role(resource.original_filename, opening)
+            if refined is not ResourceRole.NOTES:
+                repos.resources.set_role(resource.id, refined)
+
         repos.resources.update_status(
             resource.id,
             ProcessingStatus.READY,
