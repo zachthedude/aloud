@@ -56,6 +56,8 @@
 
 .btn-icon {
   width: 2.25rem; height: 2.25rem;
+  /* Centres its own icon, so it works with or without .btn alongside it. */
+  display: inline-grid; place-items: center;
   padding: 0;
   border-radius: var(--radius-full);
   color: var(--ink-soft);

@@ -284,6 +284,12 @@
 .transport .play svg { width: 1.7rem; height: 1.7rem; }
 .transport .skip-label {
   position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* The digits sit in the clear middle of the arc, a touch low so they look
+     centred against an arrowhead that hangs off the top. */
+  padding-top: 2px;
   font-size: 8px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;

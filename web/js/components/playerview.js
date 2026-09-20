@@ -299,7 +299,7 @@ function transport(state) {
       'button',
       { class: 'skip', 'aria-label': 'Back 15 seconds', onClick: () => lessonPlayer.seekBy(-15) },
       icon('back15', { size: 22 }),
-      h('span', { class: 'skip-label', style: { transform: 'translateY(1px)' } }, '15')
+      h('span', { class: 'skip-label' }, '15')
     ),
     h(
       'button',
@@ -314,7 +314,7 @@ function transport(state) {
       'button',
       { class: 'skip', 'aria-label': 'Forward 15 seconds', onClick: () => lessonPlayer.seekBy(15) },
       icon('fwd15', { size: 22 }),
-      h('span', { class: 'skip-label', style: { transform: 'translateY(1px)' } }, '15')
+      h('span', { class: 'skip-label' }, '15')
     ),
     h(
       'button',
