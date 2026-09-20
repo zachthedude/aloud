@@ -103,6 +103,7 @@ def me(
     report = container.provider_report()
     return {
         "user": serialise_user(user),
+        "features": container.settings.features,
         "providers": {
             "teacher": report.teacher,
             "teacherNote": report.teacher_note,

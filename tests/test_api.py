@@ -36,6 +36,12 @@ class TestAuth:
         assert status == 200
         assert payload["user"]["displayName"] == "New"
 
+    def test_the_client_is_told_which_modes_exist(self, signed_in: Client):
+        # The interface must not offer a mode the server will refuse.
+        _status, payload = signed_in.get("/api/auth/me")
+        assert payload["features"]["duels"] is False
+        assert len(payload["features"]) == 16
+
     def test_a_password_hash_never_leaves_the_server(self, signed_in: Client):
         _status, payload = signed_in.get("/api/auth/me")
         assert "hash" not in str(payload).lower()

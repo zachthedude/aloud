@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 import secrets
 from dataclasses import dataclass, field
+
+from app import features as features_module
 from pathlib import Path
 from typing import Literal
 
@@ -74,6 +76,9 @@ class Settings:
     stt_provider: str = "auto"
     whisper_model: str = "base"
 
+    # Which crunch modes exist for this deployment. See app/features.py.
+    features: dict[str, bool] = field(default_factory=lambda: dict(features_module.DEFAULTS))
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024
@@ -135,4 +140,5 @@ def load_settings(env_file: Path | None = None) -> Settings:
         tts_provider=_env("ALOUD_TTS_PROVIDER", "auto").lower(),
         stt_provider=_env("ALOUD_STT_PROVIDER", "auto").lower(),
         whisper_model=_env("ALOUD_WHISPER_MODEL", "base"),
+        features=features_module.resolve(_env("ALOUD_FEATURES")),
     )
