@@ -34,6 +34,7 @@ from .documents.base import UnreadableDocument, UnsupportedDocument
 from .jobs import JobHandle, Step
 from .providers.base import LessonDraft, TeachingEngine
 from .retrieval import RetrievalService
+from .weighting import Evidence, weigh
 
 logger = logging.getLogger("aloud.curriculum")
 
@@ -153,6 +154,23 @@ class CurriculumService:
 
         for concept in model.concepts:
             concept.space_id = space_id
+
+        # What each topic is worth, from the past papers and syllabus the
+        # student uploaded. With neither, every topic weighs the same and the
+        # basis says so, because a guessed weighting would make triage skip
+        # the wrong thing with total confidence.
+        evidence = [
+            Evidence(role=resource.role, text=" ".join(
+                section.text for section in sections if section.resource_id == resource.id
+            ))
+            for resource in repos.resources.list_for_space(space_id)
+            if resource.role in (ResourceRole.PAST_PAPER, ResourceRole.SYLLABUS)
+        ]
+        weights = weigh(model.concepts, evidence)
+        for concept in model.concepts:
+            weight = weights[concept.id]
+            concept.exam_weight = weight.share
+            concept.weight_basis = weight.basis
 
         # 3. Order it into a plan.
         report(Step.PLANNING, 0.45)

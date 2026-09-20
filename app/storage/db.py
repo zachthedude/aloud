@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -102,7 +102,9 @@ CREATE TABLE IF NOT EXISTS concepts (
     examples       TEXT NOT NULL DEFAULT '[]',
     misconceptions TEXT NOT NULL DEFAULT '[]',
     prerequisites  TEXT NOT NULL DEFAULT '[]',
-    section_ids    TEXT NOT NULL DEFAULT '[]'
+    section_ids    TEXT NOT NULL DEFAULT '[]',
+    exam_weight    REAL NOT NULL DEFAULT 0,
+    weight_basis   TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_concepts_space ON concepts(space_id);
 
@@ -293,6 +295,10 @@ def _migrate(connection: sqlite3.Connection) -> None:
     # 2: every resource carries a role, so the examiner can refuse to mark
     #    without a mark scheme and the pattern hunter can find the papers.
     _add_column(connection, "resources", "role", "TEXT NOT NULL DEFAULT 'notes'")
+    # 3: concepts carry what they are worth in the exam, so triage can rank
+    #    by marks times weakness and say why it is skipping something.
+    _add_column(connection, "concepts", "exam_weight", "REAL NOT NULL DEFAULT 0")
+    _add_column(connection, "concepts", "weight_basis", "TEXT NOT NULL DEFAULT ''")
 
 
 class Database:

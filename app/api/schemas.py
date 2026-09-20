@@ -220,6 +220,8 @@ def serialise_concept(concept: Concept, mastery: MasteryRecord | None = None) ->
         "stageLabel": concept.stage.label,
         "difficulty": concept.difficulty,
         "terminology": concept.terminology,
+        "examWeight": round(concept.exam_weight, 4),
+        "weightBasis": concept.weight_basis,
         "formulas": concept.formulas,
         "examples": concept.examples,
         "misconceptions": concept.misconceptions,

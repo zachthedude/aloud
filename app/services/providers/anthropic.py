@@ -35,6 +35,21 @@ class AnthropicProvider:
     def available(self) -> bool:
         return bool(self._api_key)
 
+    @classmethod
+    def from_env(cls) -> "AnthropicProvider | None":
+        """The provider if a key is configured, otherwise None.
+
+        Callers that can work without Claude use this and branch on None,
+        rather than constructing one and catching ProviderUnavailable.
+        """
+        import os
+
+        key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        if not key:
+            return None
+        return cls(key, os.environ.get("ALOUD_ANTHROPIC_MODEL", "claude-sonnet-5").strip()
+                   or "claude-sonnet-5")
+
     def complete(
         self,
         system: str,
@@ -43,18 +58,31 @@ class AnthropicProvider:
         max_tokens: int = 2000,
         temperature: float = 0.4,
     ) -> str:
+        return self._send({
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": system,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+
+    def read_image(self, data: str, *, media_type: str, prompt: str) -> str:
+        """Transcribe a base64 image. Used for photographed notes and working."""
+        return self._send({
+            "max_tokens": 3000,
+            "temperature": 0,
+            "messages": [{"role": "user", "content": [
+                {"type": "image", "source": {
+                    "type": "base64", "media_type": media_type, "data": data,
+                }},
+                {"type": "text", "text": prompt},
+            ]}],
+        })
+
+    def _send(self, fields: dict) -> str:
         if not self.available:
             raise ProviderUnavailable("No ANTHROPIC_API_KEY is configured.")
 
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "system": system,
-                "messages": [{"role": "user", "content": prompt}],
-            }
-        ).encode("utf-8")
+        payload = json.dumps({"model": self.model, **fields}).encode("utf-8")
 
         request = urllib.request.Request(
             API_URL,

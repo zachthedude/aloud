@@ -27,6 +27,8 @@ from ...domain.models import ResourceKind, ResourceSection, new_id
 from .. import textanalysis as ta
 from .base import Block, ExtractedDocument, UnreadableDocument, UnsupportedDocument
 from .media import AUDIO_EXTENSIONS, MEDIA_EXTENSIONS, VIDEO_EXTENSIONS, MediaProcessor
+from .ocr import EXTENSIONS as IMAGE_EXTENSIONS
+from .ocr import ImageProcessor
 from .parsers import PROCESSORS, HtmlProcessor
 
 #: Passage sizing. Small enough to retrieve precisely, large enough to teach from.
@@ -41,18 +43,26 @@ _SIGNATURES: tuple[tuple[bytes, frozenset[str]], ...] = (
     (b"\x1a\x45\xdf\xa3", frozenset({".webm", ".mkv"})),   # Matroska
     (b"OggS", frozenset({".ogg", ".oga", ".opus"})),
     (b"fLaC", frozenset({".flac"})),
+    (b"\x89PNG\r\n\x1a\n", frozenset({".png"})),
+    (b"\xff\xd8\xff", frozenset({".jpg", ".jpeg"})),
+    (b"GIF8", frozenset({".gif"})),
+    (b"BM", frozenset({".bmp"})),
 )
 
 #: Signatures that do not begin at byte zero.
 _SIGNATURES_AT: tuple[tuple[int, bytes, frozenset[str]], ...] = (
     # ISO base media: a four-byte size, then "ftyp". Covers mp4, mov, m4a, m4v.
     (4, b"ftyp", frozenset({".mp4", ".mov", ".m4a", ".m4v"})),
+    # RIFF....WEBP
+    (8, b"WEBP", frozenset({".webp"})),
 )
 
 _DOCUMENT_EXTENSIONS = frozenset(
     {".pdf", ".docx", ".pptx", ".txt", ".md", ".markdown", ".text", ".rst", ".html", ".htm"}
 )
-_ALLOWED_EXTENSIONS = _DOCUMENT_EXTENSIONS | frozenset(MEDIA_EXTENSIONS)
+_ALLOWED_EXTENSIONS = (
+    _DOCUMENT_EXTENSIONS | frozenset(MEDIA_EXTENSIONS) | frozenset(IMAGE_EXTENSIONS)
+)
 
 
 def is_media(extension: str) -> bool:
@@ -121,6 +131,8 @@ def check_signature(extension: str, head: bytes) -> None:
 
 
 def kind_for(extension: str) -> ResourceKind:
+    if extension in IMAGE_EXTENSIONS:
+        return ResourceKind.IMAGE
     if extension in VIDEO_EXTENSIONS:
         return ResourceKind.VIDEO
     if extension in AUDIO_EXTENSIONS:
@@ -217,6 +229,10 @@ def extract(path: Path, *, mime_type: str = "", stt=None) -> ExtractedDocument:
     media = MediaProcessor(stt)
     if media.can_handle(path, mime_type):
         return media.extract(path)
+
+    photo = ImageProcessor()
+    if photo.can_handle(path, mime_type):
+        return photo.extract(path)
 
     for processor in PROCESSORS:
         if processor.can_handle(path, mime_type):    # type: ignore[attr-defined]

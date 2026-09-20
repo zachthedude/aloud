@@ -36,6 +36,7 @@ class ResourceKind(str, Enum):
     MARKDOWN = "markdown"
     URL = "url"
     NOTE = "note"
+    IMAGE = "image"    # a photo of a page or whiteboard, read with OCR
     VIDEO = "video"    # a recorded lecture, transcribed before teaching
     AUDIO = "audio"
 
@@ -295,6 +296,10 @@ class Concept:
     misconceptions: list[str] = field(default_factory=list)
     prerequisites: list[str] = field(default_factory=list)  # concept ids
     section_ids: list[str] = field(default_factory=list)    # grounding sources
+    # What this concept is worth in the exam, and why. Set by the weighting
+    # service from past papers and the syllabus; 0.0 means not yet weighed.
+    exam_weight: float = 0.0
+    weight_basis: str = ""
 
 
 @dataclass

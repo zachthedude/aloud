@@ -422,6 +422,7 @@ class ConceptRepository(_Base):
             facts=from_json(row["facts"]), examples=from_json(row["examples"]),
             misconceptions=from_json(row["misconceptions"]),
             prerequisites=from_json(row["prerequisites"]), section_ids=from_json(row["section_ids"]),
+            exam_weight=row["exam_weight"], weight_basis=row["weight_basis"],
         )
 
     def replace_for_space(self, space_id: str, concepts: list[Concept]) -> None:
@@ -431,12 +432,13 @@ class ConceptRepository(_Base):
             connection.executemany(
                 """INSERT INTO concepts (id, space_id, name, summary, definition, stage, difficulty,
                                          ordinal, terminology, formulas, facts, examples,
-                                         misconceptions, prerequisites, section_ids)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                                         misconceptions, prerequisites, section_ids,
+                                         exam_weight, weight_basis)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [(c.id, space_id, c.name, c.summary, c.definition, c.stage.value, c.difficulty,
                   c.ordinal, to_json(c.terminology), to_json(c.formulas), to_json(c.facts),
                   to_json(c.examples), to_json(c.misconceptions), to_json(c.prerequisites),
-                  to_json(c.section_ids)) for c in concepts],
+                  to_json(c.section_ids), c.exam_weight, c.weight_basis) for c in concepts],
             )
 
     def list_for_space(self, space_id: str) -> list[Concept]:
