@@ -1,0 +1,304 @@
+/* =========================================================================
+   The room.
+
+   Where every crunch mode runs. The spoken line is the interface: set large,
+   left-aligned, in the serif the product already speaks in, with what was
+   said before drifting up and dimming. There is one control that matters,
+   the talk button, in thumb reach.
+
+   Colour says who has the floor, and nothing else. Brass while Aloud is
+   talking, the cool your-turn colour while it is yours. The same two colours
+   the lesson player uses, so the room reads as the same product, not a
+   second one. State is always also said in words beneath the lines, so
+   nothing depends on seeing the colour.
+   ========================================================================= */
+
+.room {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--night);
+  color: var(--night-text);
+  padding-inline: max(var(--space-5), env(safe-area-inset-left));
+  --floor: var(--night-faint);
+  overflow: hidden;
+}
+.room[data-floor="aloud"]     { --floor: var(--brass); }
+.room[data-floor="student"],
+.room[data-floor="listening"] { --floor: var(--mint); }
+
+/* The room turns to whoever is speaking. Two fixed glows crossfade rather
+   than one glow changing colour, because a colour cannot ease between two
+   custom properties and a jump reads as a glitch. */
+.room::before,
+.room::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -30% -20%;
+  height: 70%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms var(--ease-out);
+}
+.room::before { background: radial-gradient(50% 60% at 50% 100%, var(--brass-glow), transparent 70%); }
+.room::after  { background: radial-gradient(50% 60% at 50% 100%, var(--mint-glow), transparent 70%); }
+.room[data-floor="aloud"]::before { opacity: 1; }
+.room[data-floor="student"]::after,
+.room[data-floor="listening"]::after { opacity: 1; }
+
+/* --- Top ---------------------------------------------------------------- */
+.room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: max(var(--space-4), env(safe-area-inset-top)) var(--space-2);
+  width: min(100%, 44rem);
+  margin-inline: auto;
+}
+.room-leave {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-2) 0 0;
+  background: none;
+  border: none;
+  color: var(--night-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.room-leave:hover { color: var(--night-text); }
+.room-leave:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+.room-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--night-soft);
+}
+.room-mode svg { color: var(--floor); transition: color 400ms var(--ease-out); }
+
+/* --- The spoken lines ------------------------------------------------------
+   Newest at the bottom, just above the controls, where the eye already is.
+   Older lines are smaller and fainter, so the current one is unmistakable
+   without a single border or label. */
+.room-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: min(100%, 44rem);
+  margin-inline: auto;
+  padding-block: var(--space-7) var(--space-5);
+  min-height: 0;
+}
+.room-lines { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.room-line {
+  margin: 0;
+  max-width: 30ch;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+  transition: opacity 400ms var(--ease-out), font-size 400ms var(--ease-out), color 400ms var(--ease-out);
+}
+.room-line[data-age="0"] { font-size: clamp(1.55rem, 4.4vw, 2.45rem); color: var(--night-text); }
+.room-line[data-age="1"] { font-size: var(--text-lg); color: var(--night-soft); }
+.room-line[data-age="2"] { font-size: var(--text-md); color: var(--night-faint); opacity: 0.8; }
+.room-line[data-age="3"] { font-size: var(--text-md); color: var(--night-faint); opacity: 0.45; }
+
+/* What the student said is set in the sans: the voice changes, so the type
+   does. No label needed to tell who is speaking. */
+.room-line-you {
+  font-family: var(--font-sans, inherit);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+  max-width: 36ch;
+  padding-left: var(--space-5);
+}
+.room-line-you[data-age="0"] { font-size: var(--text-lg); color: var(--mint); }
+.room-line-you[data-age="1"] { font-size: var(--text-md); }
+
+.room-line.is-new { animation: room-arrive 520ms var(--ease-out) both; }
+@keyframes room-arrive {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The words being recognised, as they are recognised. */
+.room-partial {
+  margin: var(--space-3) 0 0;
+  min-height: 1.6em;
+  padding-left: var(--space-5);
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--night-soft);
+}
+.room-partial:empty { visibility: hidden; }
+
+.room-floor {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  min-height: 1.4em;
+  font-size: var(--text-sm);
+  color: var(--night-soft);
+}
+.room-pip {
+  width: 0.5rem; height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--floor);
+  transition: background-color 400ms var(--ease-out);
+}
+.room[data-floor="quiet"] .room-pip,
+.room[data-floor="done"] .room-pip { opacity: 0; }
+
+/* The room is night in either theme, so it cannot borrow the page's trouble
+   colour: in light mode that is a dark red, unreadable here. */
+.room-error { margin: var(--space-3) 0 0; font-size: var(--text-sm); color: #f3a394; }
+
+/* --- Controls --------------------------------------------------------------- */
+.room-controls {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-4) max(var(--space-6), env(safe-area-inset-bottom));
+  width: min(100%, 44rem);
+  margin-inline: auto;
+}
+
+.room-talk {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 5.5rem; height: 5.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--night-line);
+  background: var(--night-raised);
+  color: var(--night-text);
+  cursor: pointer;
+  transition: background-color 300ms var(--ease-out), border-color 300ms var(--ease-out),
+              color 300ms var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.room-talk svg { position: relative; z-index: 1; }
+.room-talk:hover:not(:disabled) { border-color: var(--night-soft); }
+.room-talk:active:not(:disabled) { transform: scale(0.96); }
+.room-talk:focus-visible { box-shadow: 0 0 0 3px var(--night), 0 0 0 5px var(--floor); }
+.room-talk:disabled { opacity: 0.4; cursor: default; }
+.room[data-floor="student"] .room-talk { border-color: var(--mint); }
+.room-talk[data-listening="true"] { background: var(--mint); border-color: var(--mint); color: var(--night); }
+
+/* The microphone level, as a ring that breathes with the voice. It is the
+   one thing in the room that moves on its own, and it only moves because
+   the student is making it. */
+.room-level {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--mint) 22%, transparent);
+  transform: scale(1);
+  transition: transform 90ms linear;
+  pointer-events: none;
+}
+.room-talk[data-listening="false"] .room-level { opacity: 0; }
+
+.room-type {
+  display: flex;
+  gap: var(--space-2);
+  width: min(100%, 30rem);
+}
+.room-input {
+  flex: 1;
+  min-width: 0;
+  height: 3rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--night-line);
+  background: var(--night-raised);
+  color: var(--night-text);
+  font: inherit;
+  font-size: var(--text-base);
+}
+.room-input::placeholder { color: var(--night-soft); }
+.room-input:focus-visible { outline: none; border-color: var(--floor); box-shadow: 0 0 0 3px color-mix(in srgb, var(--floor) 30%, transparent); }
+.room-send {
+  display: grid; place-items: center;
+  width: 3rem; height: 3rem;
+  flex: none;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--night-line);
+  background: var(--night-raised);
+  color: var(--night-text);
+  cursor: pointer;
+}
+.room-send:focus-visible { box-shadow: var(--focus-ring); }
+
+.room-small {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-5);
+}
+.room-small button {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  color: var(--night-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  text-underline-offset: 0.25em;
+}
+.room-small button:hover { color: var(--night-text); text-decoration: underline; }
+.room-small button:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+.room-finished {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.room-again { background: var(--night-text); color: var(--night); border: none; }
+.room-again:hover:not(:disabled) { background: #fff; color: var(--night); }
+.room-quiet { background: transparent; color: var(--night-text); border: 1px solid var(--night-line); }
+.room-quiet:hover:not(:disabled) { background: var(--night-raised); }
+
+@media (prefers-reduced-motion: reduce) {
+  .room::before, .room::after, .room-line, .room-talk, .room-level { transition: none; }
+  .room-line.is-new { animation: none; }
+}
+
+/* --- Starting a mode from Ways of working ------------------------------ */
+.mode-start {
+  position: relative;
+  z-index: 1;               /* above the card-wide label target */
+  align-self: flex-start;
+  margin-top: auto;
+}
+.mode-subject {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.mode-subject select {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--chalk-line-strong);
+  background: var(--chalk-raised);
+  color: var(--ink);
+  font: inherit;
+}

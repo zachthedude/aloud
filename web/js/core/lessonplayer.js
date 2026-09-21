@@ -17,6 +17,7 @@ import { narrator, estimateSeconds } from './narrator.js';
 import { listener } from './listener.js';
 import { bargeIn } from './bargein.js';
 import { keepAlive } from './keepalive.js';
+import { latencyFrom } from './latency.js';
 import { announce, notifyError, toast } from './feedback.js';
 
 /** How often to persist playback position. */
@@ -528,11 +529,7 @@ class LessonPlayer {
   _latency(inputMode) {
     const asked = this._askedAt;
     this._askedAt = null;   // one measurement per question
-    if (inputMode !== 'voice' || asked == null) return undefined;
-    const started = this._heardAt ?? this._pressedAt;
-    // A press from before this question was asked belongs to an earlier turn.
-    if (started == null || started < asked) return undefined;
-    return Math.min(600000, Math.round(started - asked));
+    return latencyFrom({ asked, heard: this._heardAt, pressed: this._pressedAt, inputMode });
   }
 
   _wireListener() {

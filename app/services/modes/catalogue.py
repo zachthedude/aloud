@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .. import features
+from ... import features
 
 #: Requirements a mode can have beyond being built.
 NEEDS_MODEL = "model"            # real reasoning, so an API key

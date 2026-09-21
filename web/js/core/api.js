@@ -133,6 +133,13 @@ export const api = {
     get: (id) => get(`/api/lessons/${id}`),
   },
 
+  crunch: {
+    start: (payload) => post('/api/crunch', payload),
+    get: (id) => get(`/api/crunch/${id}`),
+    turn: (id, payload) => post(`/api/crunch/${id}/turn`, payload),
+    end: (id) => post(`/api/crunch/${id}/end`, {}),
+  },
+
   learner: {
     forSpace: (spaceId) => get(`/api/learner/${spaceId}`),
     forget: () => del('/api/learner'),

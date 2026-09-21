@@ -7,6 +7,8 @@ authorisation check cannot be forgotten at a call site.
 
 from __future__ import annotations
 
+import json
+
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -17,6 +19,7 @@ from ..domain.models import (
     AudioStatus,
     Bookmark,
     Concept,
+    CrunchSession,
     Job,
     Judgement,
     LearningSession,
@@ -77,6 +80,7 @@ class Repositories:
         self.bookmarks = BookmarkRepository(database)
         self.assessments = AssessmentRepository(database)
         self.jobs = JobRepository(database)
+        self.crunch = CrunchRepository(database)
 
 
 class _Base:
@@ -761,13 +765,59 @@ class MasteryRepository(_Base):
         and every end-of-lesson assessment. Their material and lessons stay:
         those are what they uploaded, not what we inferred about them.
         """
-        tables = ("mastery", "responses", "teacher_messages", "assessments")
+        tables = ("mastery", "responses", "teacher_messages", "assessments", "crunch_sessions")
         removed: dict[str, int] = {}
         with self.db.writer() as connection:
             for table in tables:
                 cursor = connection.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
                 removed[table] = cursor.rowcount
         return removed
+
+
+class CrunchRepository(_Base):
+    """Crunch sittings. Always read through the owner, so a guessed id is a 404."""
+
+    @staticmethod
+    def _row(row: sqlite3.Row) -> CrunchSession:
+        return CrunchSession(
+            id=row["id"], user_id=row["user_id"], space_id=row["space_id"], mode=row["mode"],
+            cursor=json.loads(row["cursor"] or "{}"), ended=bool(row["ended"]),
+            last_say=row["last_say"], last_expects=row["last_expects"],
+            last_concept_id=row["last_concept_id"], last_question_id=row["last_question_id"],
+            last_grounded_in=from_json(row["last_grounded_in"]),
+            created_at=from_iso(row["created_at"]) or utcnow(),
+            updated_at=from_iso(row["updated_at"]) or utcnow(),
+        )
+
+    def get(self, session_id: str, user_id: str) -> CrunchSession | None:
+        with self.db.reader() as connection:
+            row = connection.execute(
+                "SELECT * FROM crunch_sessions WHERE id = ? AND user_id = ?", (session_id, user_id)
+            ).fetchone()
+        return self._row(row) if row else None
+
+    def save(self, session: CrunchSession) -> CrunchSession:
+        session.updated_at = utcnow()
+        with self.db.writer() as connection:
+            connection.execute(
+                """INSERT INTO crunch_sessions (id, user_id, space_id, mode, cursor, ended, last_say,
+                                                last_expects, last_concept_id, last_question_id,
+                                                last_grounded_in, created_at, updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   ON CONFLICT(id) DO UPDATE SET
+                       cursor = excluded.cursor, ended = excluded.ended,
+                       last_say = excluded.last_say, last_expects = excluded.last_expects,
+                       last_concept_id = excluded.last_concept_id,
+                       last_question_id = excluded.last_question_id,
+                       last_grounded_in = excluded.last_grounded_in,
+                       updated_at = excluded.updated_at""",
+                (session.id, session.user_id, session.space_id, session.mode,
+                 json.dumps(session.cursor), int(session.ended), session.last_say,
+                 session.last_expects, session.last_concept_id, session.last_question_id,
+                 to_json(session.last_grounded_in), to_iso(session.created_at),
+                 to_iso(session.updated_at)),
+            )
+        return session
 
 
 class SessionRepository(_Base):

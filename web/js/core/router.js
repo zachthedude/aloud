@@ -56,7 +56,27 @@ export function currentRoute() {
   return current;
 }
 
+/**
+ * Run once, just before the next navigation replaces this view.
+ *
+ * For views that hold something outside the page: audio, a microphone,
+ * borrowed callbacks. Leaving by the back button must release those exactly
+ * as leaving by a button on screen would.
+ */
+const leaveHooks = [];
+export function onLeave(hook) {
+  leaveHooks.push(hook);
+}
+
 export async function render() {
+  for (const hook of leaveHooks.splice(0)) {
+    try {
+      await hook();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   const path = location.pathname || '/';
   const query = new URLSearchParams(location.search);
   const match = resolve(path);

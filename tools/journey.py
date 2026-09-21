@@ -394,6 +394,52 @@ def progress(browser, _lesson_id, _space_id):
     return f"{state['touched']} concepts with evidence"
 
 
+@step("A mode runs in the room, on the one learner model")
+def room_mode(browser, _lesson_id, space_id):
+    """Quarantine through the real room and voice loop, answered by typing."""
+    browser.send("Page.navigate", {"url": f"{BASE_URL[0]}/room/{space_id}/quarantine"})
+    browser.drain(3.0)
+    state = evaluate(browser, f"""(async () => {{
+        const room = document.querySelector('.room');
+        if (!room) return {{ missing: true }};
+        const loop = room.parentElement.__room;
+        const first = loop.state.turn;
+        if (!first) return {{ error: loop.state.error || 'no first turn' }};
+        const caption = room.querySelector('.room-line[data-age="0"]').textContent;
+        if (first.done) return {{ empty: true, say: first.say, caption }};
+
+        const before = await fetch('/api/learner/{space_id}', {{ credentials: 'same-origin' }})
+            .then(r => r.json());
+        const row = (m) => m.concepts.find(c => c.conceptId === first.conceptId);
+        const answeredBefore = row(before).answered;
+
+        // Headless Chrome has no voice, so hand the floor over as the
+        // narrator would at the end of the question, then answer by typing.
+        loop._spoken();
+        await loop.answer('an object keeps moving unless a resultant force acts on it', 'text');
+        await new Promise(r => setTimeout(r, 600));
+
+        const after = await fetch('/api/learner/{space_id}', {{ credentials: 'same-origin' }})
+            .then(r => r.json());
+        return {{
+            asked: first.say, caption, expects: first.expects,
+            reply: loop.state.turn && loop.state.turn.say,
+            lines: loop.state.lines.length,
+            recorded: row(after).answered - answeredBefore,
+        }};
+    }})()""", timeout=60)
+    assert not state.get("missing"), "the room did not render"
+    assert not state.get("error"), state.get("error")
+    if state.get("empty"):
+        assert "quarantine" in state["say"].lower()
+        return "nothing quarantined; the room said so"
+    assert state["caption"] == state["asked"], "the caption is not what was said"
+    assert state["expects"] == "answer"
+    assert state["reply"], "the teacher said nothing back"
+    assert state["recorded"] == 1, f"learner model recorded {state['recorded']} answers, not 1"
+    return f"asked, answered, recorded once; now {state['lines']} lines on screen"
+
+
 @step("Scrolling travels along the background wave")
 def waveform_backdrop(browser, _lesson_id, _space_id):
     """Last, because it leaves the app for the landing page."""

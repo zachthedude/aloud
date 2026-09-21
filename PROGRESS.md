@@ -6,9 +6,8 @@ tested, what is known to be rough. See `PLAN.md` for the plan this tracks.
 **Baseline commit:** `f1c6fb3` — the self-paced app before the crunch rebuild.
 Anything the rebuild deletes is one `git revert` away.
 
-**Now:** 383 tests · 14 client checks · 34/34 screens clean in light and dark at
-1440 and 390 · browser journey 18/18 (three runs in a row) · time to first audio
-median 336 ms.
+**Now:** 427 tests · 14 client checks · 38/38 screens clean in light and dark at
+1440 and 390 · browser journey 19/19 · time to first audio median 431 ms.
 
 ---
 
@@ -234,10 +233,95 @@ nothing else writes the learner row.
 - Nothing visible reads the model yet except Settings. The hesitation heatmap
   (feature 4) is what puts it on screen.
 
-## Phase D — orchestrator
+## Phase D — the orchestrator and the room · done
 
-Not started.
+Every mode is now a small strategy over one voice loop and one learner model.
+The plan's test for done holds: **adding a mode is one file and one line in
+`app/services/modes/registry.py`**, and no mode owns a microphone, a speech
+queue, a repository or an engine.
+
+**How it fits together**
+
+- `app/domain/turn.py`: what passes between a mode and the loop. A mode
+  receives a `Reply` and returns a `Turn`: what to say, whether to listen,
+  which concept, which material it came from, and whether it is finished.
+- `app/services/modes/base.py`: the `Mode` contract and `ModeContext`, which
+  hands a mode the learner model and the functions to evaluate and record an
+  answer. That is all a mode can touch.
+- `app/services/crunch_service.py`: the orchestrator. Checks the mode may
+  run, evaluates, writes every answer through `LearnerService`, keeps the
+  transcript, and persists the mode's place so a closed tab resumes.
+- `web/js/core/voiceloop.js`: the client loop. Speak, listen, send, speak.
+  Borrows the same narrator, recogniser, barge-in and keep-alive the lesson
+  player uses, and hands them back on the way out.
+- `web/js/views/room.js`: the one screen every mode runs in.
+
+**Two real modes prove it**, deliberately opposite shapes:
+
+- **Quarantine (15)** asks, marks and records. Worst topic first, interleaved
+  rather than hammered, and a sitting ends even if nothing clears.
+- **Last 90 seconds (2)** only speaks. Concepts the learner model says are
+  known, heaviest in the exam first, fitted to 90 seconds at the student's
+  own speed. It never asks and never writes to the learner model.
+
+**The room.** The spoken line is the interface, set large in the serif,
+with earlier lines drifting up and dimming. What the student said is set in
+the sans, so who is speaking is carried by the type rather than a label.
+Brass means Aloud has the floor; the cool colour means it is yours; the same
+state is always said in words too. One big talk button, then type, repeat,
+skip and leave. Contrast measured on the night ground: secondary text 8.6:1,
+errors 9.2:1, the your-turn colour 7.6:1.
+
+**Rules enforced by tests, not by hope:** no turn is longer than three
+sentences, every turn that names a concept says which material it came from,
+feedback never scolds, a flag cannot switch on a mode that is not built, and
+a built mode defaults on while an unbuilt one defaults off.
+
+**Found and fixed on the way:**
+- The service worker served scripts **cache-first**, and nothing here is
+  content-hashed, so after it installed, changes were invisible until the
+  cache was renamed by hand. Now network-first, with the cache as the offline
+  fallback.
+- The modes screen showed a mode as On whenever its flag was set, even if it
+  did not exist. It now uses the same rule as the orchestrator, which is why
+  it now says 2 ready rather than 7.
+- The room's error text borrowed the page's red, which in light mode is dark
+  and unreadable on the room's night background.
+
+**Tested:** 34 unit tests on the two modes and the contract, 14 API tests
+over real HTTP (a real quarantined concept asked, answered and recorded once;
+resume after a closed tab; unbuilt, invented and switched-off modes refused
+with the reason; strangers get 404; forgetting removes sittings), a journey
+step that runs quarantine through the real room and checks the learner model
+recorded exactly one answer, and both room screens in the QA sweep.
+
+**Deliberately not done, and why:**
+- **The old dashboard, plan, library and progress screens are still there.**
+  The approved plan folds them into the room, but with two modes the room
+  cannot yet do their jobs, and removing them now would make the app worse.
+  They go once triage and the heatmap replace them.
+- **The lesson player still drives the audio modules itself** rather than
+  through the voice loop. They take turns safely, because the room pauses
+  any lesson on the way in. It moves onto the loop when lessons become a
+  mode. Marked with a `ponytail:` comment in `voiceloop.js`.
+- **Streaming** is still not built, for the reason in B3.
+
+**Rough:**
+- Headless Chrome has no voice, so the room's spoken path is only exercised
+  by hand. The journey hands the floor over the way the narrator would.
+- The demo data was given a learner history through the real maths, so the
+  modes have something to do. Applied to the demo account only: the database
+  also holds a real account, so there was no reset.
+- The two oldest history lines in the room fade to 4.1:1 contrast on
+  purpose. They are hidden from screen readers and always in the transcript,
+  so no required reading depends on them.
 
 ## Features 1–16
 
-None implemented. All sixteen are visible and honest about it.
+| # | Mode | State |
+|---|---|---|
+| 2 | Last 90 seconds | **done**, in phase D |
+| 15 | Quarantine | **done**, in phase D |
+| 1, 3–14, 16 | everything else | visible, honest, not built |
+
+Next in the brief's order: **1 Triage**, **4 Hesitation heatmap**, **7 Examiner**.

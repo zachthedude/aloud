@@ -10,11 +10,13 @@
  * never cached, because a stale answer about what you know is worse than an
  * honest "you are offline". The app already has an offline message for that.
  *
- * Cache-first for the shell because those files are versioned by this cache
- * name and change only on deploy. Network-only for everything else.
+ * Network-first, with the cache as the fallback. Nothing here is content-
+ * hashed, so cache-first would keep serving yesterday's scripts after every
+ * change until someone remembered to rename the cache. Online, you always get
+ * the current files; offline, you get the last ones that worked.
  */
 
-const CACHE = 'aloud-shell-v1';
+const CACHE = 'aloud-shell-v2';
 
 const SHELL = [
   '/',
@@ -26,6 +28,7 @@ const SHELL = [
   '/styles/app.css',
   '/styles/landing.css',
   '/styles/player.css',
+  '/styles/room.css',
   '/assets/icon.svg',
   '/assets/fonts/figtree.css',
   '/assets/fonts/newsreader.css',
@@ -75,16 +78,14 @@ self.addEventListener('fetch', (event) => {
   if (!isShell) return;
 
   event.respondWith(
-    caches.match(request).then(
-      (hit) =>
-        hit ||
-        fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-    )
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request).then((hit) => hit || Response.error()))
   );
 });

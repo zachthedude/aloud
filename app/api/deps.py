@@ -18,6 +18,7 @@ from fastapi import Cookie, Depends, HTTPException, Request, status
 from ..config import Settings, load_settings
 from ..domain.models import User
 from ..services.audio_service import AudioService
+from ..services.crunch_service import CrunchService
 from ..services.curriculum_service import CurriculumService
 from ..services.jobs import JobRunner
 from ..services.learner_service import LearnerService
@@ -84,6 +85,7 @@ class Container:
     curriculum: CurriculumService
     lessons: LessonService
     learner: LearnerService
+    crunch: CrunchService
     audio: AudioService
     jobs: JobRunner
 
@@ -109,6 +111,7 @@ def build_container(settings: Settings | None = None) -> Container:
 
     curriculum = CurriculumService(repos, engine, retrieval, stt)  # type: ignore[arg-type]
     learner = LearnerService(repos)
+    crunch = CrunchService(repos, engine, learner, settings)
     lessons = LessonService(repos, engine, curriculum, learner)  # type: ignore[arg-type]
     audio = AudioService(repos, tts, settings.audio_dir)        # type: ignore[arg-type]
     jobs = JobRunner(repos.jobs)
@@ -124,6 +127,7 @@ def build_container(settings: Settings | None = None) -> Container:
         curriculum=curriculum,
         lessons=lessons,
         learner=learner,
+        crunch=crunch,
         audio=audio,
         jobs=jobs,
     )

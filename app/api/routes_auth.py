@@ -6,6 +6,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 
 from ..domain.models import User, new_id
 from ..services.modes import catalogue as mode_catalogue
+from ..services.modes.registry import effective_flags
 from .deps import (
     SESSION_COOKIE,
     Container,
@@ -104,7 +105,7 @@ def me(
     report = container.provider_report()
     return {
         "user": serialise_user(user),
-        "features": container.settings.features,
+        "features": effective_flags(container.settings.features),
         "providers": {
             "teacher": report.teacher,
             "teacherNote": report.teacher_note,
@@ -131,7 +132,7 @@ def modes(
     has_key = bool(container.settings.anthropic_api_key)
     return {
         "modes": mode_catalogue(
-            flags=container.settings.features,
+            flags=effective_flags(container.settings.features),
             has_model=has_key,
             has_vision=has_key,
             muted=set(user.muted_modes),

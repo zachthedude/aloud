@@ -142,6 +142,26 @@ class AskRequest(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class CrunchStartRequest(BaseModel):
+    space_id: str = Field(min_length=1, max_length=64, alias="spaceId")
+    mode: str = Field(min_length=1, max_length=32)
+
+    model_config = {"populate_by_name": True}
+
+
+class CrunchTurnRequest(BaseModel):
+    """The student's side of one exchange, in any mode."""
+
+    text: str = Field(default="", max_length=8000)
+    # "" for an answer, "next" once a turn that expected nothing has been
+    # heard, "skip" to move past what is on the floor.
+    action: str = Field(default="", pattern="^(|next|skip)$")
+    input_mode: str = Field(default="voice", alias="inputMode", pattern="^(voice|text)$")
+    latency_ms: int | None = Field(default=None, ge=0, le=600_000, alias="latencyMs")
+
+    model_config = {"populate_by_name": True}
+
+
 class BookmarkRequest(BaseModel):
     lesson_id: str = Field(min_length=1, max_length=64, alias="lessonId")
     section_ordinal: int = Field(default=0, ge=0, le=200, alias="sectionOrdinal")

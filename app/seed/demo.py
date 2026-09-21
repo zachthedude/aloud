@@ -110,6 +110,32 @@ the time taken to change momentum, which reduces the force on the passengers.
 """
 
 
+#: A believable history behind each seeded state, folded through the real
+#: learner maths so the demo's confidence, hesitation and quarantine are what
+#: the product would genuinely have worked out, not numbers typed in.
+DEMO_HISTORY = {
+    Mastery.MASTERED: [("correct", 1400)] * 4,
+    Mastery.UNDERSTOOD: [("correct", 1900), ("correct", 2300), ("correct", 1700)],
+    Mastery.DEVELOPING: [("correct", 6800), ("partial", 7400), ("correct", 7900)],
+    Mastery.NEEDS_REVIEW: [("wrong", 5200), ("missed", None), ("wrong", 6100)],
+}
+
+
+def with_history(record, state, *, seen_at):
+    """The learner record after the demo history for `state`."""
+    from ..domain import learner
+    from ..domain.learner import Observation
+
+    fillers = {"partial": "um I think it's, uh", "missed": "I don't know"}
+    for outcome, latency in DEMO_HISTORY[state]:
+        record = learner.record(
+            record, Observation(outcome, latency_ms=latency, transcript=fillers.get(outcome, "")),
+            now=seen_at,
+        )
+    record.evidence_count = len(DEMO_HISTORY[state])
+    return record
+
+
 def seed(settings: Settings, *, with_progress: bool = True) -> dict:
     """Create the demo account and subject. Safe to run more than once."""
     container = build_container(settings)
@@ -212,11 +238,10 @@ def _seed_progress(container, user: User, space: LearningSpace) -> None:
     for index, lesson in enumerate(lessons[: len(shape)]):
         record = repos.mastery.get_or_create(user.id, space.id, lesson.concept_id)
         state = shape[index]
+        record = with_history(record, state, seen_at=utcnow() - timedelta(hours=2 + index * 3))
         record.state = state
-        record.evidence_count = 3 - min(2, index)
         record.correct_streak = 2 if state is Mastery.MASTERED else 0
         record.struggle_count = 2 if state is Mastery.NEEDS_REVIEW else 0
-        record.last_seen_at = utcnow() - timedelta(days=index + 1)
         record.note = notes.get(state, "")
         repos.mastery.save(record)
 

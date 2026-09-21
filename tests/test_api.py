@@ -976,3 +976,137 @@ class TestAnsweringRace:
             {"text": "pause", "sessionId": session_id, "awaitingAnswer": True},
         )
         assert payload["handledBy"] == "player"
+
+
+# ---------------------------------------------------------------------------
+# Crunch sittings: the orchestrator end to end
+# ---------------------------------------------------------------------------
+
+
+class TestCrunch:
+    @pytest.fixture
+    def quarantined(self, analysed):
+        """A subject where one concept has been missed three times, for real."""
+        client, space = analysed
+        _status, payload = client.get(f"/api/spaces/{space}")
+        _status, lesson = client.get(f"/api/lessons/{payload['lessons'][0]['id']}")
+        session_id = lesson["session"]["id"]
+        question = next(s["question"] for s in lesson["sections"] if s["question"])
+        for _ in range(3):
+            TestLearnerModel.answer(client, session_id, question, "I don't know")
+        _status, model = client.get(f"/api/learner/{space}")
+        held = [c for c in model["concepts"] if c["quarantined"]]
+        assert [c["conceptId"] for c in held] == [question["conceptId"]]
+        return client, space, question["conceptId"]
+
+    def test_an_empty_quarantine_says_so_and_ends(self, analysed):
+        client, space = analysed
+        status, payload = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        assert status == 201, payload
+        assert payload["turn"]["done"] is True
+        assert payload["session"]["ended"] is True
+
+    def test_last_90_with_nothing_known_teaches_nothing(self, analysed):
+        client, space = analysed
+        _status, payload = client.post("/api/crunch", {"spaceId": space, "mode": "last90"})
+        assert payload["turn"]["done"] is True
+        assert "already know" in payload["turn"]["say"]
+
+    def test_quarantine_asks_about_the_quarantined_concept(self, quarantined):
+        client, space, concept_id = quarantined
+        status, payload = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        assert status == 201
+        turn = payload["turn"]
+        assert turn["expects"] == "answer"
+        assert turn["conceptId"] == concept_id
+        assert turn["groundedIn"], "every teaching turn names its source"
+
+    def test_an_answer_in_a_mode_lands_in_the_one_learner_model(self, quarantined):
+        client, space, concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        crunch_id = started["session"]["id"]
+
+        before = TestLearnerModel.row(client, space, concept_id)["answered"]
+        status, payload = client.post(
+            f"/api/crunch/{crunch_id}/turn",
+            {"text": "um the distance between two peaks of a wave", "latencyMs": 3400},
+        )
+        assert status == 200, payload
+        assert payload["turn"]["expects"] == "nothing", "feedback, then the next question"
+
+        row = TestLearnerModel.row(client, space, concept_id)
+        assert row["answered"] == before + 1
+        assert row["medianLatencyMs"] is not None
+
+    def test_the_whole_sitting_is_in_the_transcript(self, quarantined):
+        client, space, _concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        crunch_id = started["session"]["id"]
+        client.post(f"/api/crunch/{crunch_id}/turn", {"text": "a wave carries energy"})
+        _status, conversation = client.get(f"/api/spaces/{space}/conversation")
+        said = " ".join(m["text"] for m in conversation["messages"])
+        assert started["turn"]["say"] in said
+        assert "a wave carries energy" in said
+
+    def test_a_closed_tab_resumes_on_the_same_turn(self, quarantined):
+        client, space, _concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        _status, again = client.get(f"/api/crunch/{started['session']['id']}")
+        assert again["turn"]["say"] == started["turn"]["say"]
+        assert again["turn"]["expects"] == "answer"
+
+    def test_an_unbuilt_mode_refuses_and_says_why(self, analysed):
+        client, space = analysed
+        status, payload = client.post("/api/crunch", {"spaceId": space, "mode": "triage"})
+        assert status == 409
+        assert "not built" in payload["detail"]
+
+    def test_an_invented_mode_is_not_found(self, analysed):
+        client, space = analysed
+        assert client.post("/api/crunch", {"spaceId": space, "mode": "karaoke"})[0] == 404
+
+    def test_a_mode_the_student_switched_off_stays_off(self, analysed):
+        client, space = analysed
+        client.patch("/api/auth/me", {"mutedModes": ["quarantine"]})
+        status, payload = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        assert status == 409
+        assert "switched" in payload["detail"]
+
+    def test_a_finished_sitting_takes_no_more_turns(self, analysed):
+        client, space = analysed
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        status, _payload = client.post(f"/api/crunch/{started['session']['id']}/turn", {"action": "next"})
+        assert status == 409
+
+    def test_an_unknown_action_is_refused(self, quarantined):
+        client, space, _concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        status, _payload = client.post(
+            f"/api/crunch/{started['session']['id']}/turn", {"action": "delete_everything"}
+        )
+        assert status == 422
+
+    def test_a_stranger_cannot_touch_a_sitting(self, quarantined, server):
+        client, space, _concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        crunch_id = started["session"]["id"]
+        other = Client(server)
+        other.post("/api/auth/signup",
+                   {"email": "snoop@aloud.app", "password": "correcthorse", "displayName": "S"})
+        assert other.get(f"/api/crunch/{crunch_id}")[0] == 404
+        assert other.post(f"/api/crunch/{crunch_id}/turn", {"text": "hi"})[0] == 404
+        assert other.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})[0] == 404
+
+    def test_forgetting_removes_sittings_too(self, quarantined):
+        client, space, _concept_id = quarantined
+        _status, started = client.post("/api/crunch", {"spaceId": space, "mode": "quarantine"})
+        _status, forgot = client.delete("/api/learner")
+        assert forgot["forgotten"]["crunch_sessions"] >= 1
+        assert client.get(f"/api/crunch/{started['session']['id']}")[0] == 404
+
+    def test_the_modes_screen_cannot_offer_an_unbuilt_mode(self, signed_in: Client):
+        _status, payload = signed_in.get("/api/auth/modes")
+        states = {m["key"]: m["state"] for m in payload["modes"]}
+        assert states["quarantine"] == "on"
+        assert states["last90"] == "on"
+        assert states["triage"] == "coming"

@@ -20,6 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .api import (
     routes_audio,
     routes_auth,
+    routes_crunch,
     routes_learner,
     routes_lessons,
     routes_progress,
@@ -75,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(routes_audio.router)
     app.include_router(routes_progress.router)
     app.include_router(routes_learner.router)
+    app.include_router(routes_crunch.router)
 
     _register_error_handlers(app)
     _register_security_headers(app)

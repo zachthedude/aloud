@@ -19,15 +19,23 @@ def test_every_mode_in_the_brief_has_a_flag():
 
 
 def test_unbuilt_modes_are_off_by_default():
+    # A flag defaults on exactly when its mode is implemented.
+    from app.services.modes import registry
+
     resolved = features.resolve("")
     assert resolved["duels"] is False
-    assert all(value is False for value in resolved.values())
+    for key, on in resolved.items():
+        assert on is (key in registry.MODES), key
 
 
 def test_a_named_feature_turns_on():
     resolved = features.resolve("triage")
     assert resolved["triage"] is True
     assert resolved["examiner"] is False
+
+
+def test_a_built_mode_can_be_switched_off():
+    assert features.resolve("-quarantine")["quarantine"] is False
 
 
 def test_a_minus_prefix_turns_one_off():

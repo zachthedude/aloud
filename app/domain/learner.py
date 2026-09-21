@@ -44,6 +44,11 @@ HALF_LIFE_HOURS = 48
 #: Right-but-hesitant is shaky above this.
 SHAKY_AT = 0.45
 
+#: "Already known", for the modes that must only touch what is known: the
+#: last-90-seconds recap, and anything else that promises no new material.
+#: Reached by two fluent right answers, or three halting ones, seen recently.
+KNOWN_AT = 0.7
+
 # Disfluencies and hedges. "like", "sort of" and "kind of" are left out on
 # purpose: "a kind of force that acts like a spring" is physics, not doubt.
 _FILLERS = re.compile(
@@ -215,6 +220,11 @@ def is_shaky(state: MasteryRecord) -> bool:
     not a pattern.
     """
     return answered(state) >= 2 and accuracy(state) >= 0.6 and hesitation(state) >= SHAKY_AT
+
+
+def is_known(state: MasteryRecord, *, now: datetime) -> bool:
+    """Solid enough to recap without teaching it again."""
+    return confidence(state, now=now) >= KNOWN_AT
 
 
 def catch_rate(state: MasteryRecord) -> float | None:

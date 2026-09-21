@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -272,6 +272,23 @@ CREATE TABLE IF NOT EXISTS assessments (
     created_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_assessments_user ON assessments(user_id, space_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS crunch_sessions (
+    id               TEXT PRIMARY KEY,
+    user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    space_id         TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+    mode             TEXT NOT NULL,
+    cursor           TEXT NOT NULL DEFAULT '{}',
+    ended            INTEGER NOT NULL DEFAULT 0,
+    last_say         TEXT NOT NULL DEFAULT '',
+    last_expects     TEXT NOT NULL DEFAULT 'nothing',
+    last_concept_id  TEXT NOT NULL DEFAULT '',
+    last_question_id TEXT NOT NULL DEFAULT '',
+    last_grounded_in TEXT NOT NULL DEFAULT '[]',
+    created_at       TEXT NOT NULL,
+    updated_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_crunch_user ON crunch_sessions(user_id, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS jobs (
     id         TEXT PRIMARY KEY,

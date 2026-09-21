@@ -353,6 +353,8 @@ def main() -> int:
         ("subject-plan", f"/space/{space_id}?view=plan", True),
         ("subject-material", f"/space/{space_id}?view=material", True),
         ("subject-map", f"/space/{space_id}?view=map", True),
+        ("room-quarantine", f"/room/{space_id}/quarantine", True),
+        ("room-last90", f"/room/{space_id}/last90", True),
         ("plan", "/plan", True),
         ("modes", "/modes", True),
         ("library", "/library", True),

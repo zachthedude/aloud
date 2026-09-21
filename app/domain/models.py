@@ -440,6 +440,31 @@ class LearningSession:
 
 
 @dataclass
+class CrunchSession:
+    """One sitting in one crunch mode.
+
+    The cursor is the mode's own memory between turns: which concepts are
+    queued, what was just asked. It is kept here rather than in the mode so a
+    closed tab or a server restart resumes exactly where the student was. The
+    last turn is kept so the room can show and re-say it on return.
+    """
+
+    id: str = field(default_factory=lambda: new_id("crn"))
+    user_id: str = ""
+    space_id: str = ""
+    mode: str = ""
+    cursor: dict = field(default_factory=dict)
+    ended: bool = False
+    last_say: str = ""
+    last_expects: str = "nothing"
+    last_concept_id: str = ""
+    last_question_id: str = ""
+    last_grounded_in: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utcnow)
+    updated_at: datetime = field(default_factory=utcnow)
+
+
+@dataclass
 class TeacherMessage:
     """A turn in the conversation, whether narrated, asked or answered."""
 
