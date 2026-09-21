@@ -6,8 +6,8 @@ tested, what is known to be rough. See `PLAN.md` for the plan this tracks.
 **Baseline commit:** `f1c6fb3` — the self-paced app before the crunch rebuild.
 Anything the rebuild deletes is one `git revert` away.
 
-**Now:** 335 tests passing · 34/34 screens clean in light and dark at 1440 and
-390 · browser journey 18/18.
+**Now:** 335 tests · 8 client checks · 34/34 screens clean in light and dark at
+1440 and 390 · browser journey 18/18 · time to first audio median 424 ms.
 
 ---
 
@@ -120,9 +120,65 @@ uploaded a mark scheme yet". That needs the learner model (phase C).
 
 ---
 
-## Phases B–D — core
+## Phase B — the voice loop
 
-Not started. B (voice loop) is the next one that matters, and the biggest.
+### B1 · Barge-in and push-to-talk · done
+
+The student can talk over the teacher and it stops instantly.
+
+The hard part was never detecting speech. It was not detecting *Aloud's own
+speech*, playing out of the same device the microphone points at. Four
+defences: `echoCancellation` on the stream, calibration that happens while
+Aloud is already talking so leakage becomes the floor, a grace period before
+arming, and a 180 ms sustain window so a door closing cannot trigger it.
+
+Barge-in only arms after the microphone has been used successfully once in
+the session. Asking for microphone permission the moment a lesson starts, for
+a feature nobody requested, is how you get denied forever.
+
+**Hold H** is the push-to-talk fallback, and the only way in when barge-in has
+never armed.
+
+**Tested:** 8 client checks in `tools/jscheck.py`, including the one that
+matters: five seconds of Aloud's own leakage never interrupting itself, and a
+real voice still cutting through it.
+
+**Rough:** every check is synthetic. The detector has never met a real
+microphone, a real room or a phone speaker. Thresholds are reasoned, not
+tuned. This needs a human with a phone on a table, and it is the single most
+likely thing in this build to be wrong.
+
+### B2 · Surviving the screen going off · done
+
+Wake Lock while narrating, released on pause. Media Session so the lock screen
+and headphone buttons work. A silent looping track so a backgrounded tab is
+not throttled into silence. All three are best-effort and none throws.
+
+Plus a PWA: manifest, installable, and a service worker that caches the shell
+only. Lessons and progress are never cached, because a stale answer about what
+you know is worse than an honest "you are offline".
+
+**Rough:** untested on a real phone. That is the whole point of the feature, so
+it counts for very little until someone walks around with it.
+
+### B3 · Streaming · deliberately not built
+
+`tools/latency.py` drives 20 real turns through the real endpoint:
+
+    fastest 260 ms · median 424 ms · p95 830 ms · budget 1200 ms
+
+That is the on-device engine, which is what runs with no API key. It passes
+with room to spare, so the streaming turn endpoint in `PLAN.md` would be
+plumbing built for a problem that does not exist yet on this path.
+
+**The gap:** with `ANTHROPIC_API_KEY` set, the turn becomes a Claude round
+trip and this number will not hold. Streaming is what fixes that, and it
+should be built and measured against a real key rather than guessed at. Run
+`python tools/latency.py` with a key set to see where it actually lands.
+
+## Phases C–D — core
+
+Not started.
 
 ## Features 1–16
 

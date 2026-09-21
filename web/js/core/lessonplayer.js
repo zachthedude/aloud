@@ -15,6 +15,8 @@ import { api, ApiError } from './api.js';
 import { store, setPlayer, player } from './store.js';
 import { narrator, estimateSeconds } from './narrator.js';
 import { listener } from './listener.js';
+import { bargeIn } from './bargein.js';
+import { keepAlive } from './keepalive.js';
 import { announce, notifyError, toast } from './feedback.js';
 
 /** How often to persist playback position. */
@@ -107,6 +109,10 @@ class LessonPlayer {
   stop({ keepOpen = false } = {}) {
     narrator.stop();
     listener.cancel();
+    // Give the microphone and the screen back. Both have an indicator a
+    // person can see, and leaving either on after a lesson looks like a bug.
+    this._barge?.close();
+    this._releaseDevice();
     clearInterval(this._saveTimer);
     this._saveTimer = null;
     this._clearSleepTimer();
@@ -168,6 +174,8 @@ class LessonPlayer {
   }
 
   pause() {
+    this._disarmInterrupt();
+    this._releaseDevice();
     narrator.pause();
     setPlayer({ speaking: false });
     this._setState('paused');
@@ -377,6 +385,62 @@ class LessonPlayer {
     this._setState(this._speakingState());
     this._startSaving();
     narrator.speak(section.script, { offsetSeconds });
+    this._armInterrupt();
+    this._holdDevice();
+  }
+
+  /**
+   * Let the student talk over the teacher.
+   *
+   * Only armed once the microphone has already been used successfully in this
+   * session. Asking for microphone permission the moment a lesson starts, for
+   * a feature nobody requested, is the kind of thing that gets a permission
+   * denied forever; waiting until the student has answered aloud once means
+   * it switches itself on exactly when it is able to work.
+   */
+  _armInterrupt() {
+    if (!this._micGranted) return;
+    if (!this._barge) {
+      this._barge = bargeIn({
+        onInterrupt: () => {
+          // narrator.stop() inside listen() is the instant stop.
+          announce('Go ahead.');
+          this.listen();
+        },
+      });
+    }
+    this._barge.arm();
+  }
+
+  _disarmInterrupt() {
+    this._barge?.disarm();
+  }
+
+  /** Keep the lesson running with the phone in a pocket. */
+  _holdDevice() {
+    const state = player();
+    keepAlive.start();
+    keepAlive.setPlaying(true);
+    keepAlive.describe(
+      {
+        title: state.lesson?.title || 'Lesson',
+        artist: state.lesson?.subtitle || 'Aloud',
+        album: state.spaceTitle || 'Aloud',
+      },
+      {
+        play: () => this.play(),
+        pause: () => this.pause(),
+        previoustrack: () => this.previous(),
+        nexttrack: () => this.next(),
+        seekbackward: () => this.seekBy(-15),
+        seekforward: () => this.seekBy(15),
+      }
+    );
+  }
+
+  _releaseDevice() {
+    keepAlive.setPlaying(false);
+    keepAlive.stop();
   }
 
   _wireNarrator() {
@@ -440,10 +504,14 @@ class LessonPlayer {
       listener.stop();
       return;
     }
+    this._disarmInterrupt();
     narrator.stop();
     setPlayer({ partial: '', level: 0 });
     this._setState('listening');
     await listener.start();
+    // Reaching here means permission was granted, so from now on the student
+    // can simply talk over the teacher instead of pressing anything.
+    this._micGranted = true;
   }
 
   _wireListener() {

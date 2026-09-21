@@ -852,6 +852,15 @@ function onKeyDown(event) {
   const target = event.target;
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
 
+  // Hold H to talk. The push-to-talk fallback for anyone whose microphone,
+  // room or preference makes talking over the teacher unreliable, and the
+  // only way in at all when barge-in has never been armed.
+  if (event.key === 'h' || event.key === 'H') {
+    event.preventDefault();
+    if (!event.repeat && !state.listening) lessonPlayer.listen();
+    return;
+  }
+
   switch (event.key) {
     case ' ':
     case 'k':
@@ -874,6 +883,12 @@ function onKeyDown(event) {
   }
 }
 
+function onKeyUp(event) {
+  if (event.key !== 'h' && event.key !== 'H') return;
+  const state = player();
+  if (state.open && state.listening) lessonPlayer.listen();   // stops it
+}
+
 let keysBound = false;
 
 /* --- Render ------------------------------------------------------------ */
@@ -883,6 +898,7 @@ export function playerView() {
   const state = player();
   if (!keysBound) {
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
     keysBound = true;
   }
 

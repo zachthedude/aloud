@@ -216,3 +216,14 @@ async function onNavigate(handler, context) {
 
 start(onNavigate);
 renderPlayerLayer();
+
+// The offline shell. Only the shell: lessons and progress are never cached,
+// because a stale answer about what you know is worse than saying you are
+// offline. Registered after first paint so it never delays a lesson starting.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* an app that will not work on a train is still an app */
+    });
+  });
+}
