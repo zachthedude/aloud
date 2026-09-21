@@ -124,6 +124,52 @@ case(BARGE, "a reset disarms it")("""
 """)
 
 
+# ---------------------------------------------------------------------------
+# Hesitation: how long the student took to start answering
+# ---------------------------------------------------------------------------
+
+PLAYER = "/js/core/lessonplayer.js"
+
+case(PLAYER, "a spoken answer reports time to the first word")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = 1000; lp._heardAt = 4200; lp._pressedAt = 3000;
+  const ms = lp._latency('voice');
+  return ms === 3200 || `got ${ms}`;
+""")
+
+case(PLAYER, "without words heard, the press to talk is used")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = 1000; lp._heardAt = null; lp._pressedAt = 2500;
+  const ms = lp._latency('voice');
+  return ms === 1500 || `got ${ms}`;
+""")
+
+case(PLAYER, "a typed answer reports no latency")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = 1000; lp._heardAt = 4200;
+  return lp._latency('text') === undefined || 'typed answer carried a latency';
+""")
+
+case(PLAYER, "a press from an earlier turn is not counted")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = 5000; lp._heardAt = null; lp._pressedAt = 2000;
+  return lp._latency('voice') === undefined || 'stale press was counted';
+""")
+
+case(PLAYER, "each question is measured once")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = 1000; lp._heardAt = 2000;
+  lp._latency('voice');
+  return lp._latency('voice') === undefined || 'measured twice';
+""")
+
+case(PLAYER, "talking over the teacher, with no question asked, reports nothing")("""
+  const lp = M.lessonPlayer;
+  lp._askedAt = null; lp._heardAt = 2000;
+  return lp._latency('voice') === undefined || 'invented a latency';
+""")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run client-side unit checks in Chrome.")
     parser.add_argument("--base", default="http://127.0.0.1:8000")

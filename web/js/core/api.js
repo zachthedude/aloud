@@ -133,6 +133,11 @@ export const api = {
     get: (id) => get(`/api/lessons/${id}`),
   },
 
+  learner: {
+    forSpace: (spaceId) => get(`/api/learner/${spaceId}`),
+    forget: () => del('/api/learner'),
+  },
+
   sessions: {
     update: (id, payload) => patch(`/api/sessions/${id}`, payload),
     answer: (id, payload) => post(`/api/sessions/${id}/answer`, payload),

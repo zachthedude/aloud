@@ -17,7 +17,14 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .api import routes_audio, routes_auth, routes_lessons, routes_progress, routes_spaces
+from .api import (
+    routes_audio,
+    routes_auth,
+    routes_learner,
+    routes_lessons,
+    routes_progress,
+    routes_spaces,
+)
 from .api.deps import build_container
 from .config import Settings, load_settings
 
@@ -67,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(routes_lessons.router)
     app.include_router(routes_audio.router)
     app.include_router(routes_progress.router)
+    app.include_router(routes_learner.router)
 
     _register_error_handlers(app)
     _register_security_headers(app)

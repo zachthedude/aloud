@@ -796,3 +796,183 @@ class TestAuthorisation:
         _status, body = intruder.get("/api/dashboard")
         assert body["spaces"] == []
         assert body["continue"] is None
+
+
+# ---------------------------------------------------------------------------
+# The learner model
+# ---------------------------------------------------------------------------
+
+
+class TestLearnerModel:
+    """One answer, spoken, lands every signal in the one learner row."""
+
+    @pytest.fixture
+    def asked(self, analysed):
+        client, space = analysed
+        _status, payload = client.get(f"/api/spaces/{space}")
+        lesson_id = payload["lessons"][0]["id"]
+        _status, lesson = client.get(f"/api/lessons/{lesson_id}")
+        session_id = lesson["session"]["id"]
+        question = next(s["question"] for s in lesson["sections"] if s["question"])
+        return client, space, session_id, question
+
+    @staticmethod
+    def answer(client, session_id, question, transcript, *, mode="voice", latency=None):
+        client.patch(f"/api/sessions/{session_id}", {"state": "idle"})
+        client.patch(f"/api/sessions/{session_id}", {"state": "ai_speaking"})
+        client.patch(f"/api/sessions/{session_id}", {"state": "waiting_for_student"})
+        body = {"questionId": question["id"], "transcript": transcript, "inputMode": mode}
+        if latency is not None:
+            body["latencyMs"] = latency
+        status, payload = client.post(f"/api/sessions/{session_id}/answer", body)
+        assert status == 200, payload
+        return payload
+
+    @staticmethod
+    def row(client, space, concept_id):
+        _status, payload = client.get(f"/api/learner/{space}")
+        return next(c for c in payload["concepts"] if c["conceptId"] == concept_id)
+
+    def test_every_concept_is_listed_even_untouched(self, asked):
+        client, space, _session, _question = asked
+        status, payload = client.get(f"/api/learner/{space}")
+        assert status == 200
+        assert payload["concepts"]
+        untouched = [c for c in payload["concepts"] if c["answered"] == 0]
+        assert untouched and all(c["confidence"] == 0.0 for c in untouched)
+
+    def test_a_spoken_answer_records_every_signal_at_once(self, asked):
+        client, space, session_id, question = asked
+        self.answer(
+            client, session_id, question,
+            "um the distance between two peaks, no wait, two crests of a wave",
+            latency=6400,
+        )
+        row = self.row(client, space, question["conceptId"])
+        assert row["answered"] == 1
+        assert row["medianLatencyMs"] == 6400
+        assert row["fillers"] == 1
+        assert row["corrections"] == 1
+        assert row["lastSeenAt"]
+        assert 0.0 < row["hesitation"] <= 1.0
+
+    def test_a_typed_answer_has_no_latency(self, asked):
+        client, space, session_id, question = asked
+        self.answer(client, session_id, question, "the distance between two peaks of a wave",
+                    mode="text", latency=9000)
+        assert self.row(client, space, question["conceptId"])["medianLatencyMs"] is None
+
+    def test_an_absurd_latency_is_refused(self, asked):
+        client, _space, session_id, question = asked
+        client.patch(f"/api/sessions/{session_id}", {"state": "ai_speaking"})
+        client.patch(f"/api/sessions/{session_id}", {"state": "waiting_for_student"})
+        status, _payload = client.post(
+            f"/api/sessions/{session_id}/answer",
+            {"questionId": question["id"], "transcript": "a wave", "latencyMs": -5},
+        )
+        assert status == 422
+
+    def test_the_progress_screen_and_the_learner_model_agree(self, asked):
+        """Two readers, one row: they cannot disagree about what was answered."""
+        client, space, session_id, question = asked
+        self.answer(client, session_id, question, "the distance between two peaks of a wave",
+                    latency=1800)
+        _status, progress = client.get("/api/progress")
+        evidence = {
+            c["id"]: c["evidence"] for s in progress["spaces"] for c in s["concepts"]
+        }
+        assert evidence[question["conceptId"]] == self.row(client, space, question["conceptId"])["answered"]
+
+    def test_forgetting_removes_everything_learned(self, asked):
+        client, space, session_id, question = asked
+        self.answer(client, session_id, question, "the distance between two peaks of a wave",
+                    latency=1800)
+        status, payload = client.delete("/api/learner")
+        assert status == 200
+        assert payload["forgotten"]["mastery"] >= 1
+        assert payload["forgotten"]["responses"] >= 1
+
+        row = self.row(client, space, question["conceptId"])
+        assert row["answered"] == 0 and row["confidence"] == 0.0
+        _status, conversation = client.get(f"/api/spaces/{space}/conversation")
+        assert not conversation.get("messages")
+
+    def test_forgetting_keeps_the_material(self, asked):
+        client, space, session_id, question = asked
+        self.answer(client, session_id, question, "the distance between two peaks", latency=1800)
+        client.delete("/api/learner")
+        _status, payload = client.get(f"/api/spaces/{space}")
+        assert payload["lessons"], "their uploads and lessons are theirs, not inferences"
+
+    def test_a_stranger_cannot_read_the_learner_model(self, asked, server):
+        _client, space, _session, _question = asked
+        other = Client(server)
+        other.post("/api/auth/signup",
+                   {"email": "peek@aloud.app", "password": "correcthorse", "displayName": "Peek"})
+        assert other.get(f"/api/learner/{space}")[0] == 404
+
+    def test_forgetting_only_forgets_you(self, asked, server):
+        client, space, session_id, question = asked
+        self.answer(client, session_id, question, "the distance between two peaks", latency=1800)
+        other = Client(server)
+        other.post("/api/auth/signup",
+                   {"email": "bystander@aloud.app", "password": "correcthorse", "displayName": "B"})
+        assert other.delete("/api/learner")[0] == 200
+        assert self.row(client, space, question["conceptId"])["answered"] == 1
+
+
+def test_only_the_learner_service_writes_the_learner_model():
+    """The architectural rule the whole plan leans on, checked mechanically.
+
+    Every mode reads one row per concept. That only holds if one place writes
+    it; a second writer is how two modes end up disagreeing about a student.
+    Seed data is exempt: it is fixture setup, not a mode.
+    """
+    import pathlib
+    import re
+
+    root = pathlib.Path(__file__).resolve().parent.parent / "app"
+    writers = sorted(
+        str(path.relative_to(root)).replace("\\", "/")
+        for path in root.rglob("*.py")
+        if re.search(r"\.mastery\.(save|get_or_create)\(", path.read_text(encoding="utf-8"))
+    )
+    assert writers == ["seed/demo.py", "services/learner_service.py"], writers
+
+
+class TestAnsweringRace:
+    """A quick answer must be marked, not chatted to.
+
+    The client saves "waiting for the student" asynchronously. A student who
+    answers fast can get their classify request to the server before that
+    save lands, so the server still thinks the teacher is talking. Found by
+    the browser journey failing one run in several.
+    """
+
+    @pytest.fixture
+    def speaking(self, analysed):
+        client, space = analysed
+        _status, payload = client.get(f"/api/spaces/{space}")
+        _status, lesson = client.get(f"/api/lessons/{payload['lessons'][0]['id']}")
+        session_id = lesson["session"]["id"]
+        # The server's copy is still mid-sentence: the client's save has not landed.
+        client.patch(f"/api/sessions/{session_id}", {"state": "ai_speaking"})
+        return client, space, session_id
+
+    def test_the_client_saying_a_question_is_open_makes_it_an_answer(self, speaking):
+        client, space, session_id = speaking
+        status, payload = client.post(
+            f"/api/spaces/{space}/ask",
+            {"text": "a wave is a disturbance that carries energy",
+             "sessionId": session_id, "awaitingAnswer": True},
+        )
+        assert status == 200
+        assert payload["handledBy"] == "answer"
+
+    def test_a_command_is_still_a_command_while_answering(self, speaking):
+        client, space, session_id = speaking
+        _status, payload = client.post(
+            f"/api/spaces/{space}/ask",
+            {"text": "pause", "sessionId": session_id, "awaitingAnswer": True},
+        )
+        assert payload["handledBy"] == "player"

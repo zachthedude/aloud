@@ -682,6 +682,12 @@ class MasteryRepository(_Base):
             evidence_count=row["evidence_count"], correct_streak=row["correct_streak"],
             struggle_count=row["struggle_count"], last_seen_at=from_iso(row["last_seen_at"]),
             note=row["note"],
+            correct=row["correct"], partial=row["partial"], wrong=row["wrong"],
+            missed=row["missed"], latencies=from_json(row["latencies"]),
+            fillers=row["fillers"], corrections=row["corrections"],
+            catches=row["catches"], lies_heard=row["lies_heard"],
+            strikes=row["strikes"], clear_streak=row["clear_streak"],
+            quarantined=bool(row["quarantined"]),
         )
 
     def get(self, user_id: str, concept_id: str) -> MasteryRecord | None:
@@ -705,16 +711,33 @@ class MasteryRepository(_Base):
         with self.db.writer() as connection:
             connection.execute(
                 """INSERT INTO mastery (id, user_id, space_id, concept_id, state, evidence_count,
-                                        correct_streak, struggle_count, last_seen_at, note)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)
+                                        correct_streak, struggle_count, last_seen_at, note,
+                                        correct, partial, wrong, missed, latencies, fillers, corrections, catches, lies_heard, strikes, clear_streak, quarantined)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(user_id, concept_id) DO UPDATE SET
                        state = excluded.state, evidence_count = excluded.evidence_count,
                        correct_streak = excluded.correct_streak,
                        struggle_count = excluded.struggle_count,
-                       last_seen_at = excluded.last_seen_at, note = excluded.note""",
+                       last_seen_at = excluded.last_seen_at, note = excluded.note,
+                       correct = excluded.correct,
+                       partial = excluded.partial,
+                       wrong = excluded.wrong,
+                       missed = excluded.missed,
+                       latencies = excluded.latencies,
+                       fillers = excluded.fillers,
+                       corrections = excluded.corrections,
+                       catches = excluded.catches,
+                       lies_heard = excluded.lies_heard,
+                       strikes = excluded.strikes,
+                       clear_streak = excluded.clear_streak,
+                       quarantined = excluded.quarantined""",
                 (record.id, record.user_id, record.space_id, record.concept_id, record.state.value,
                  record.evidence_count, record.correct_streak, record.struggle_count,
-                 to_iso(record.last_seen_at), record.note),
+                 to_iso(record.last_seen_at), record.note,
+                 record.correct, record.partial, record.wrong, record.missed,
+                 to_json(record.latencies), record.fillers, record.corrections,
+                 record.catches, record.lies_heard, record.strikes, record.clear_streak,
+                 int(record.quarantined)),
             )
         return record
 
@@ -729,6 +752,22 @@ class MasteryRepository(_Base):
         with self.db.reader() as connection:
             rows = connection.execute("SELECT * FROM mastery WHERE user_id = ?", (user_id,)).fetchall()
         return [self._row(row) for row in rows]
+
+
+    def forget_user(self, user_id: str) -> dict[str, int]:
+        """Delete everything Aloud has learned about a student, in one transaction.
+
+        The learner model, every transcript of what they said, every reply,
+        and every end-of-lesson assessment. Their material and lessons stay:
+        those are what they uploaded, not what we inferred about them.
+        """
+        tables = ("mastery", "responses", "teacher_messages", "assessments")
+        removed: dict[str, int] = {}
+        with self.db.writer() as connection:
+            for table in tables:
+                cursor = connection.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
+                removed[table] = cursor.rowcount
+        return removed
 
 
 class SessionRepository(_Base):

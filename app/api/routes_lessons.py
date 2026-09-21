@@ -170,7 +170,11 @@ def submit_answer(
 
     try:
         reply = container.lessons.submit_answer(
-            session, payload.question_id, payload.transcript, input_mode=payload.input_mode
+            session,
+            payload.question_id,
+            payload.transcript,
+            input_mode=payload.input_mode,
+            latency_ms=payload.latency_ms,
         )
     except LessonNotFound as error:
         raise HTTPException(status_code=404, detail=str(error)) from None
@@ -276,7 +280,9 @@ def ask_teacher(
     if payload.session_id:
         session = container.repos.sessions.get(payload.session_id, user.id)
 
-    awaiting = bool(session and session.state is LessonState.WAITING_FOR_STUDENT)
+    awaiting = payload.awaiting_answer or bool(
+        session and session.state is LessonState.WAITING_FOR_STUDENT
+    )
     command = parse(payload.text, awaiting_answer=awaiting)
 
     if command.intent is Intent.ANSWER:

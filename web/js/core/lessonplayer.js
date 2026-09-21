@@ -481,6 +481,9 @@ class LessonPlayer {
   // -- questions and answers ---------------------------------------------
 
   _askQuestion(question) {
+    // The clock for hesitation starts the moment the floor is handed over.
+    this._askedAt = performance.now();
+    this._heardAt = null;
     setPlayer({ question, reply: null, partial: '', elapsed: 0 });
     this._setState('waiting_for_student');
     announce(`Your turn. ${question.prompt}`, { assertive: true });
@@ -514,10 +517,38 @@ class LessonPlayer {
     this._micGranted = true;
   }
 
+  /**
+   * How long the student took to start answering, or undefined.
+   *
+   * Only spoken answers have one: a typed answer's pause is typing. And only
+   * when the question was actually put to them, so an answer started by
+   * talking over the teacher mid-explanation reports nothing rather than a
+   * made-up number.
+   */
+  _latency(inputMode) {
+    const asked = this._askedAt;
+    this._askedAt = null;   // one measurement per question
+    if (inputMode !== 'voice' || asked == null) return undefined;
+    const started = this._heardAt ?? this._pressedAt;
+    // A press from before this question was asked belongs to an earlier turn.
+    if (started == null || started < asked) return undefined;
+    return Math.min(600000, Math.round(started - asked));
+  }
+
   _wireListener() {
-    listener.onPartial = (text) => setPlayer({ partial: text });
+    listener.onPartial = (text) => {
+      // The first word heard is when the student started answering. Kept
+      // once, so a long answer does not read as a long pause.
+      if (this._heardAt == null && text) this._heardAt = performance.now();
+      setPlayer({ partial: text });
+    };
     listener.onLevel = (level) => setPlayer({ level });
-    listener.onStart = () => setPlayer({ listening: true });
+    listener.onStart = () => {
+      // Recording-only browsers give no partial words. Pressing to talk is
+      // then the closest honest signal of when they were ready.
+      this._pressedAt = performance.now();
+      setPlayer({ listening: true });
+    };
     listener.onStop = () => setPlayer({ listening: false, level: 0 });
 
     listener.onError = (message) => {
@@ -558,6 +589,9 @@ class LessonPlayer {
         text,
         sessionId: state.sessionId,
         conceptId: state.question.conceptId || '',
+        // A question is on the floor, and this client knows it before the
+        // server's copy of the session catches up.
+        awaitingAnswer: true,
       });
       if (parsed.handledBy === 'player') {
         this._runLocalIntent(parsed.intent);
@@ -584,6 +618,7 @@ class LessonPlayer {
         questionId: state.question.id,
         transcript: text,
         inputMode,
+        latencyMs: this._latency(inputMode),
       });
       const reply = result.reply;
       setPlayer({ question: null, partial: '' });

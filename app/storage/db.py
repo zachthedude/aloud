@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -194,7 +194,19 @@ CREATE TABLE IF NOT EXISTS mastery (
     correct_streak INTEGER NOT NULL DEFAULT 0,
     struggle_count INTEGER NOT NULL DEFAULT 0,
     last_seen_at   TEXT,
-    note           TEXT NOT NULL DEFAULT ''
+    note           TEXT NOT NULL DEFAULT '',
+    correct      INTEGER NOT NULL DEFAULT 0,
+    partial      INTEGER NOT NULL DEFAULT 0,
+    wrong        INTEGER NOT NULL DEFAULT 0,
+    missed       INTEGER NOT NULL DEFAULT 0,
+    latencies    TEXT NOT NULL DEFAULT '[]',
+    fillers      INTEGER NOT NULL DEFAULT 0,
+    corrections  INTEGER NOT NULL DEFAULT 0,
+    catches      INTEGER NOT NULL DEFAULT 0,
+    lies_heard   INTEGER NOT NULL DEFAULT 0,
+    strikes      INTEGER NOT NULL DEFAULT 0,
+    clear_streak INTEGER NOT NULL DEFAULT 0,
+    quarantined  INTEGER NOT NULL DEFAULT 0
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mastery_unique ON mastery(user_id, concept_id);
 CREATE INDEX IF NOT EXISTS idx_mastery_space ON mastery(user_id, space_id);
@@ -302,6 +314,20 @@ def _migrate(connection: sqlite3.Connection) -> None:
     _add_column(connection, "concepts", "weight_basis", "TEXT NOT NULL DEFAULT ''")
     # 4: which crunch modes a student has switched off for themselves.
     _add_column(connection, "users", "muted_modes", "TEXT NOT NULL DEFAULT '[]'")
+    # 5: the learner model, on the mastery row so there is one answer per
+    #    student per concept rather than two tables that drift apart.
+    _add_column(connection, "mastery", "correct", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "partial", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "wrong", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "missed", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "latencies", "TEXT NOT NULL DEFAULT '[]'")
+    _add_column(connection, "mastery", "fillers", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "corrections", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "catches", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "lies_heard", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "strikes", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "clear_streak", "INTEGER NOT NULL DEFAULT 0")
+    _add_column(connection, "mastery", "quarantined", "INTEGER NOT NULL DEFAULT 0")
 
 
 class Database:

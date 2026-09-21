@@ -117,6 +117,10 @@ class AnswerRequest(BaseModel):
     question_id: str = Field(min_length=1, max_length=64, alias="questionId")
     transcript: str = Field(default="", max_length=8000)
     input_mode: str = Field(default="voice", alias="inputMode")
+    # How long the student took to start answering, measured by the client
+    # from the moment the floor was handed over. Capped at ten minutes: a
+    # longer pause is someone who walked away, not someone thinking.
+    latency_ms: int | None = Field(default=None, ge=0, le=600_000, alias="latencyMs")
 
     model_config = {"populate_by_name": True}
 
@@ -130,6 +134,10 @@ class AskRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
     session_id: str = Field(default="", max_length=64, alias="sessionId")
     concept_id: str = Field(default="", max_length=64, alias="conceptId")
+    # The client knows a question is on the floor before the server does: its
+    # save of "waiting for the student" is asynchronous, and a quick answer can
+    # overtake it. Without this, that answer is chatted to instead of marked.
+    awaiting_answer: bool = Field(default=False, alias="awaitingAnswer")
 
     model_config = {"populate_by_name": True}
 

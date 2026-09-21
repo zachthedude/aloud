@@ -6,8 +6,9 @@ tested, what is known to be rough. See `PLAN.md` for the plan this tracks.
 **Baseline commit:** `f1c6fb3` — the self-paced app before the crunch rebuild.
 Anything the rebuild deletes is one `git revert` away.
 
-**Now:** 335 tests · 8 client checks · 34/34 screens clean in light and dark at
-1440 and 390 · browser journey 18/18 · time to first audio median 424 ms.
+**Now:** 383 tests · 14 client checks · 34/34 screens clean in light and dark at
+1440 and 390 · browser journey 18/18 (three runs in a row) · time to first audio
+median 336 ms.
 
 ---
 
@@ -176,7 +177,64 @@ trip and this number will not hold. Streaming is what fixes that, and it
 should be built and measured against a real key rather than guessed at. Run
 `python tools/latency.py` with a key set to see where it actually lands.
 
-## Phases C–D — core
+## Phase C — the learner model · done
+
+One row per student per concept, and one service allowed to write it. Every
+answer, spoken or typed, now lands correctness, time to start answering,
+filler words and self-corrections in a single upsert, so an answer can never
+be half-recorded.
+
+**What is stored** is only what was observed: answers by outcome (correct,
+partial, wrong, missed), the last eight response times, fillers,
+self-corrections, lies caught, and quarantine state.
+
+**What is derived**, on read, because it depends on the clock:
+
+- **confidence** — smoothed accuracy, discounted by hesitation, faded by time
+  since last seen. One right answer is promising, not proof.
+- **hesitation** — how long they took to start, plus fillers and corrections.
+  Independent of whether the answer was right.
+- **shaky** — right, but hesitant, over at least two answers. The signal
+  feature 4 exists to surface.
+- **quarantine** — three misses in, two clean answers in a row out. Feature
+  15's rules, live now.
+
+**Forgetting.** Settings has "Forget what Aloud knows about me": the learner
+model, every transcript, every reply and every assessment, deleted in one
+transaction. Uploads and lessons stay. It asks once before doing it, because
+it cannot be undone, so it is one tap plus one confirmation rather than
+strictly one tap.
+
+**Decision changed from the plan:** the signals are columns on the existing
+`mastery` row rather than a separate table. Two tables about the same student
+and concept would eventually disagree, which is the one failure this phase
+exists to prevent. A test enforces that only `learner_service.py` writes it.
+
+**Bug found and fixed on the way:** a student answering quickly could have
+their answer treated as a chat question and never marked. The server only
+counted text as an answer when its own copy of the session said "waiting for
+the student", and the client saves that asynchronously, so a fast answer
+could overtake it. The client now says a question is open when it knows one
+is. Found because the browser journey failed one run in several; covered by a
+regression test.
+
+**Tested:** 36 unit tests on the maths, 11 API tests over real HTTP (every
+signal in one row, typed answers carry no latency, the progress screen and the
+learner model agree, forgetting removes everything and only for you, strangers
+get 404), 6 client checks on how latency is measured, the migration run
+against the live v4 database with all rows kept, and a mechanical test that
+nothing else writes the learner row.
+
+**Rough:**
+- Filler counting reads the transcript, and Chrome's recogniser often strips
+  "um" and "uh" before we see them. It undercounts; it never invents.
+- "Unclear" counts as a miss. That covers an honest "I don't know", but it
+  also covers the evaluator being unsure, which can put a strike on a concept
+  the student may actually know.
+- Nothing visible reads the model yet except Settings. The hesitation heatmap
+  (feature 4) is what puts it on screen.
+
+## Phase D — orchestrator
 
 Not started.
 

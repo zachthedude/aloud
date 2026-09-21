@@ -144,6 +144,13 @@ of the 16 features is reachable from a mobile browser without an app store.
 
 ### The learner model (C) — exact shape
 
+> **Changed during phase C.** The signals below live as columns on the existing
+> `mastery` row, not in a separate `concept_signals` table. `mastery` was
+> already one row per student per concept; a second table beside it would be
+> two answers to "how well do they know this", which is exactly the drift this
+> section exists to prevent. `test_only_the_learner_service_writes_the_learner_model`
+> enforces the one-writer rule mechanically.
+
 ```python
 @dataclass
 class ConceptSignals:

@@ -14,7 +14,7 @@ import { narrator } from '../core/narrator.js';
 import { listener, canListenInBrowser } from '../core/listener.js';
 import { lessonPlayer, SPEEDS } from '../core/lessonplayer.js';
 import { signOut } from '../components/shell.js';
-import { toast, notifyError } from '../core/feedback.js';
+import { toast, notifyError, confirmDialog } from '../core/feedback.js';
 import { sectionHead } from '../components/pieces.js';
 
 const STYLES = [
@@ -39,6 +39,30 @@ function statusRow(label, value, ok, note) {
       value
     )
   );
+}
+
+/**
+ * Delete everything inferred about the student, in one request.
+ *
+ * Asked once, because it cannot be undone and the student is usually looking
+ * for this button precisely when they are not sure they want to press it.
+ */
+async function forgetEverything() {
+  const ok = await confirmDialog({
+    title: 'Forget what Aloud knows about you?',
+    body:
+      'Every answer you have given, what you said, and what Aloud worked out about ' +
+      'which topics you know. Your uploads and lessons are kept. This cannot be undone.',
+    confirmLabel: 'Forget it all',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await api.learner.forget();
+    toast('Done. Aloud is starting from nothing about you.');
+  } catch (error) {
+    notifyError(error);
+  }
 }
 
 export async function settingsView(mountPoint) {
@@ -251,6 +275,41 @@ export async function settingsView(mountPoint) {
             { class: 'meta', style: { marginTop: 'var(--space-3)' } },
             'Live narration always uses your own device\'s voice, which is why lessons start instantly ' +
               'and keep playing without a connection.'
+          )
+        )
+      ),
+
+      h(
+        'section',
+        null,
+        sectionHead('What Aloud keeps'),
+        h(
+          'div',
+          { class: 'card stack' },
+          h(
+            'p',
+            { class: 'muted', style: { margin: 0 } },
+            'Your voice is never kept. In most browsers it never leaves your device; where it has ' +
+              'to be transcribed on the server, it is deleted as soon as it has been read. What is ' +
+              'kept is what you said as text, and what Aloud worked out from it: which topics you ' +
+              'know, how quickly you start answering, and where you hesitate. That is what decides ' +
+              'what gets taught next.'
+          ),
+          h(
+            'button',
+            {
+              class: 'btn btn-danger btn-block',
+              type: 'button',
+              style: { justifyContent: 'flex-start' },
+              onClick: forgetEverything,
+            },
+            icon('trash', { size: 16 }),
+            'Forget what Aloud knows about me'
+          ),
+          h(
+            'p',
+            { class: 'meta', style: { margin: 0 } },
+            'Your material and the lessons built from it stay. Everything learned about you goes, at once.'
           )
         )
       ),

@@ -34,6 +34,7 @@ from ..domain.models import (
 )
 from ..domain.voice_commands import Command, Intent
 from .curriculum_service import CurriculumService
+from .learner_service import LearnerService
 from .providers.base import GroundedAnswer, TeachingEngine
 
 logger = logging.getLogger("aloud.lesson")
@@ -71,10 +72,17 @@ class TeacherReply:
 
 
 class LessonService:
-    def __init__(self, repos, engine: TeachingEngine, curriculum: CurriculumService) -> None:
+    def __init__(
+        self,
+        repos,
+        engine: TeachingEngine,
+        curriculum: CurriculumService,
+        learner: LearnerService | None = None,
+    ) -> None:
         self.repos = repos
         self.engine = engine
         self.curriculum = curriculum
+        self.learner = learner or LearnerService(repos)
 
     # -- sessions ----------------------------------------------------------
 
@@ -138,6 +146,7 @@ class LessonService:
         transcript: str,
         *,
         input_mode: str = "voice",
+        latency_ms: int | None = None,
     ) -> TeacherReply:
         """Read an answer, respond in the teacher's voice, and adapt."""
         question = self.repos.questions.get(question_id)
@@ -156,12 +165,7 @@ class LessonService:
 
             analysis = lexical(transcript, question)
 
-        record = self.repos.mastery.get_or_create(
-            session.user_id, session.space_id, question.concept_id
-        )
-        updated = mastery_rules.apply_evidence(
-            record, analysis.judgement, analysis.confidence, now=utcnow()
-        )
+        record = self.learner.current(session.user_id, session.space_id, question.concept_id)
 
         has_prerequisite = bool(concept and concept.prerequisites)
         step = mastery_rules.decide_next_step(
@@ -192,9 +196,17 @@ class LessonService:
         )
         self.repos.responses.create(response)
 
-        if analysis.detected_misconceptions:
-            updated.note = analysis.detected_misconceptions[0][:200]
-        self.repos.mastery.save(updated)
+        # One write for the whole answer: correctness, time to answer,
+        # fillers and self-corrections land together or not at all. Latency
+        # is only meaningful spoken; a typed answer's pause is typing.
+        updated = self.learner.observe_answer(
+            record,
+            judgement=analysis.judgement,
+            confidence=analysis.confidence,
+            transcript=transcript,
+            latency_ms=latency_ms if input_mode == "voice" else None,
+            note=analysis.detected_misconceptions[0] if analysis.detected_misconceptions else "",
+        )
 
         self._log(session, "student", transcript, question.concept_id)
         self._log(session, "teacher", reply_text, question.concept_id)
@@ -390,18 +402,14 @@ class LessonService:
         ]
         coverage, confidence = combine(analyses)
 
-        record = self.repos.mastery.get_or_create(
-            session.user_id, session.space_id, lesson.concept_id
-        )
-        outcome = record.state
-        if not responses:
+        if responses:
+            outcome = self.learner.current(session.user_id, session.space_id, lesson.concept_id).state
+        else:
             # Listened all the way through without answering anything. That is
             # real exposure, so it counts, but it is not evidence of mastery.
-            if outcome.rank < Mastery.DEVELOPING.rank:
-                record.state = Mastery.DEVELOPING
-                record.last_seen_at = utcnow()
-                self.repos.mastery.save(record)
-                outcome = record.state
+            outcome = self.learner.observe_exposure(
+                session.user_id, session.space_id, lesson.concept_id
+            ).state
 
         takeaways = _takeaways(concept)
         gaps = _dedupe(

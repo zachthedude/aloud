@@ -397,6 +397,22 @@ class MasteryRecord:
     last_seen_at: datetime | None = None
     note: str = ""                            # e.g. "mixed up mass and weight"
 
+    # The learner model. Only what was observed is stored; confidence and
+    # hesitation are derived on read by app/domain/learner.py, because they
+    # depend on the clock. Written only through LearnerService.
+    correct: int = 0
+    partial: int = 0
+    wrong: int = 0
+    missed: int = 0                           # asked, and nothing usable came back
+    latencies: list[int] = field(default_factory=list)   # ms to start answering, recent
+    fillers: int = 0
+    corrections: int = 0
+    catches: int = 0                          # liar mode: lies caught
+    lies_heard: int = 0
+    strikes: int = 0                          # misses since last released
+    clear_streak: int = 0                     # clean answers in a row while quarantined
+    quarantined: bool = False
+
     @property
     def needs_review(self) -> bool:
         return self.state in (Mastery.NEEDS_REVIEW, Mastery.DEVELOPING)

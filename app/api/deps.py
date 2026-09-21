@@ -20,6 +20,7 @@ from ..domain.models import User
 from ..services.audio_service import AudioService
 from ..services.curriculum_service import CurriculumService
 from ..services.jobs import JobRunner
+from ..services.learner_service import LearnerService
 from ..services.lesson_service import LessonService
 from ..services.providers import registry
 from ..services.retrieval import RetrievalService
@@ -82,6 +83,7 @@ class Container:
     stt: object
     curriculum: CurriculumService
     lessons: LessonService
+    learner: LearnerService
     audio: AudioService
     jobs: JobRunner
 
@@ -106,7 +108,8 @@ def build_container(settings: Settings | None = None) -> Container:
     stt = registry.build_stt(settings)
 
     curriculum = CurriculumService(repos, engine, retrieval, stt)  # type: ignore[arg-type]
-    lessons = LessonService(repos, engine, curriculum)          # type: ignore[arg-type]
+    learner = LearnerService(repos)
+    lessons = LessonService(repos, engine, curriculum, learner)  # type: ignore[arg-type]
     audio = AudioService(repos, tts, settings.audio_dir)        # type: ignore[arg-type]
     jobs = JobRunner(repos.jobs)
 
@@ -120,6 +123,7 @@ def build_container(settings: Settings | None = None) -> Container:
         stt=stt,
         curriculum=curriculum,
         lessons=lessons,
+        learner=learner,
         audio=audio,
         jobs=jobs,
     )
