@@ -9,7 +9,7 @@
 import { h, mount, $ } from './core/dom.js';
 import { api } from './core/api.js';
 import { store, player } from './core/store.js';
-import { route, start, navigate, currentRoute } from './core/router.js';
+import { route, start, navigate, currentRoute, withBase } from './core/router.js';
 import { shell } from './components/shell.js';
 import { playerView, miniPlayer, updatePlayerLive } from './components/playerview.js';
 import { lessonPlayer } from './core/lessonplayer.js';
@@ -228,7 +228,7 @@ renderPlayerLayer();
 // offline. Registered after first paint so it never delays a lesson starting.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register(withBase('/sw.js')).catch(() => {
       /* an app that will not work on a train is still an app */
     });
   });

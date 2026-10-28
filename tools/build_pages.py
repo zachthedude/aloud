@@ -8,6 +8,7 @@ seeded with the demo subject so the first visit opens straight into it.
 import argparse
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,9 @@ parser.add_argument("--push", action="store_true", help="publish _site to the gh
 args = parser.parse_args()
 base = args.base.rstrip("/")
 
-shutil.rmtree(OUT, ignore_errors=True)
+if OUT.exists():
+    # _site/.git (from --push) holds read-only objects on Windows; clear the flag and retry.
+    shutil.rmtree(OUT, onexc=lambda fn, path, _: (os.chmod(path, stat.S_IWRITE), fn(path)))
 shutil.copytree(ROOT / "web", OUT)
 (OUT / "sw.js").unlink()  # the in-page server makes an offline shell pointless
 

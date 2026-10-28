@@ -6,6 +6,13 @@
 const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.27.2/full/';
 const status = document.getElementById('demo-status');
 const say = (text) => { if (status) status.textContent = text; };
+// Storage can be blocked (private modes, site data off); the demo still runs, it just won't remember.
+const store = {
+  get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch { /* not remembered */ } },
+};
+// Each demo on this origin needs its own IndexedDB database: IDBFS names it after the mountpoint.
+const SAVE = '/save-aloud';
 
 const PY_BOOT = `
 import asyncio, os, sys, concurrent.futures, anyio.to_thread
@@ -71,27 +78,29 @@ async function boot() {
   await micropip.install(['anyio==4.7.0', 'starlette==0.41.3', 'fastapi==0.115.6', 'python-multipart==0.0.20', 'email-validator==2.2.0', 'pypdf==5.1.0', 'python-docx==1.1.2', 'python-pptx==1.0.2']);
 
   say('Opening your library…');
-  py.FS.mkdirTree('/save');
-  py.FS.mount(py.FS.filesystems.IDBFS, {}, '/save');
+  py.FS.mkdirTree(SAVE);
+  py.FS.mount(py.FS.filesystems.IDBFS, {}, SAVE);
   await new Promise((resolve) => py.FS.syncfs(true, resolve));
-  if (!py.FS.analyzePath('/save/data/aloud.db').exists) {
-    py.unpackArchive(await (await fetch(`${BASE}/seed.zip`)).arrayBuffer(), 'zip', { extractDir: '/save/data' });
+  if (!py.FS.analyzePath(`${SAVE}/data/aloud.db`).exists) {
+    py.unpackArchive(await (await fetch(`${BASE}/seed.zip`)).arrayBuffer(), 'zip', { extractDir: `${SAVE}/data` });
   }
   py.unpackArchive(await (await fetch(`${BASE}/server.zip`)).arrayBuffer(), 'zip', { extractDir: '/aloud' });
 
   // Sessions are signed, so the key must outlive a page load.
-  let secret = localStorage.getItem('aloud_demo_secret');
+  let secret = store.get('aloud_demo_secret');
   if (!secret) {
     secret = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
-    localStorage.setItem('aloud_demo_secret', secret);
+    store.set('aloud_demo_secret', secret);
   }
   const env = py.pyimport('os').environ;
-  env.update(py.toPy({ ALOUD_DATA_DIR: '/save/data', ALOUD_SECRET_KEY: secret, ALOUD_LLM_PROVIDER: 'none' }));
+  env.update(py.toPy({ ALOUD_DATA_DIR: `${SAVE}/data`, ALOUD_SECRET_KEY: secret, ALOUD_LLM_PROVIDER: 'none' }));
   await py.runPythonAsync(PY_BOOT);
   const handle = py.globals.get('handle');
 
   // The cookies the server sets are kept here and replayed on every call.
-  const jar = new Map(JSON.parse(localStorage.getItem('aloud_demo_cookies') || '[]'));
+  let saved = [];
+  try { saved = JSON.parse(store.get('aloud_demo_cookies') || '[]'); } catch { /* corrupt: start signed out */ }
+  const jar = new Map(saved);
   let saving = Promise.resolve();
   const realFetch = window.fetch.bind(window);
 
@@ -126,8 +135,12 @@ async function boot() {
       if (!value || attrs.some((a) => /max-age=0\b|expires=thu, 01 jan 1970/i.test(a))) jar.delete(name.trim());
       else jar.set(name.trim(), value);
     }
-    localStorage.setItem('aloud_demo_cookies', JSON.stringify([...jar]));
-    if (method !== 'GET') saving = saving.then(() => new Promise((r) => py.FS.syncfs(false, r)));
+    store.set('aloud_demo_cookies', JSON.stringify([...jar]));
+    // Answer only once the write is in IndexedDB, so a reload straight after can't lose it.
+    if (method !== 'GET') {
+      saving = saving.then(() => new Promise((r) => py.FS.syncfs(false, (err) => { if (err) console.error('Demo save failed', err); r(); })));
+      await saving;
+    }
 
     const empty = code === 204 || code === 304 || method === 'HEAD';
     return new Response(empty ? null : resBody, { status: code, headers: out });
