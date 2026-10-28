@@ -1,0 +1,483 @@
+/* =========================================================================
+   Screen-specific styles: dashboard, subjects, uploads, plan, map, progress.
+   ========================================================================= */
+
+/* --- Boot ---------------------------------------------------------------- */
+.boot {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  color: var(--ink-ghost);
+}
+.boot p {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+}
+.boot-noscript {
+  max-width: 34rem;
+  margin: var(--space-9) auto;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.narrow-page { max-width: 38rem; }
+
+/* --- Continue where you left off ----------------------------------------- */
+.continue-card {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+}
+.continue-figure {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 104px; height: 104px;
+  border-radius: var(--radius-lg);
+  background: var(--chalk-sunk);
+}
+.continue-body { min-width: 0; flex: 1 1 auto; }
+.continue-eyebrow {
+  font-size: var(--text-xs);
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+.continue-title {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+  letter-spacing: var(--tracking-tight);
+}
+.continue-meter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+@media (max-width: 720px) {
+  .continue-card { flex-direction: column; align-items: stretch; gap: var(--space-4); }
+  .continue-figure { width: 72px; height: 72px; }
+  .continue-title { font-size: var(--text-xl); }
+  .continue-card .btn-lg { width: 100%; }
+}
+
+.next-card { border-left: 2px solid var(--brass); }
+
+/* --- Subject cards -------------------------------------------------------- */
+.space-card {
+  display: block;
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+}
+.space-card:hover {
+  border-color: var(--chalk-line-strong);
+  transform: translateY(-1px);
+}
+.space-card h3 { font-size: var(--text-md); }
+
+/* --- Tabs ---------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--chalk-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-faint);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.tab-button:hover { color: var(--ink); }
+.tab-button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* --- Uploading ----------------------------------------------------------- */
+.dropzone {
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  border: 1.5px dashed var(--chalk-line-strong);
+  border-radius: var(--radius-xl);
+  background: var(--chalk-raised);
+  transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out);
+}
+.dropzone[data-over="true"] {
+  border-color: var(--ink);
+  border-style: solid;
+  background: var(--brass-wash);
+}
+.dropzone-mark { color: var(--ink-ghost); display: flex; justify-content: center; margin-bottom: var(--space-4); }
+.dropzone-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+.dropzone-sub { color: var(--ink-faint); font-size: var(--text-sm); margin-bottom: var(--space-5); }
+
+.upload-queue { margin-top: var(--space-5); display: grid; gap: var(--space-2); text-align: left; }
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--chalk);
+  border-radius: var(--radius-md);
+}
+.upload-icon { color: var(--ink-faint); flex: none; display: flex; }
+.upload-body { flex: 1 1 auto; min-width: 0; }
+.upload-name { font-size: var(--text-sm); font-weight: 600; margin: 0; }
+.upload-error { font-size: var(--text-xs); color: var(--trouble); display: block; margin-top: 2px; }
+
+/* --- Sources ------------------------------------------------------------- */
+.source-card {
+  padding: var(--space-4);
+  background: var(--chalk-raised);
+  border: 1px solid var(--chalk-line);
+  border-radius: var(--radius-lg);
+}
+.source-icon {
+  width: 2rem; height: 2rem;
+  flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--chalk-sunk);
+  color: var(--ink-soft);
+}
+.source-title { font-weight: 600; font-size: var(--text-sm); margin: 0; }
+.source-error {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--trouble-wash);
+  color: var(--trouble-text);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.analysis-panel { border-left: 2px solid var(--quiet); }
+.build-card { background: var(--chalk-raised); }
+
+/* --- Plan ---------------------------------------------------------------- */
+.plan-subject + .plan-subject,
+.progress-subject + .progress-subject {
+  margin-top: var(--space-8);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--chalk-line);
+}
+.plan-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--brass-wash);
+  border: 1px solid var(--brass-line);
+}
+.plan-next .meta { color: var(--brass-deep); }
+
+/* --- Knowledge map ------------------------------------------------------- */
+.map-wrap { min-height: 12rem; }
+.map-scroll {
+  margin-top: var(--space-5);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: var(--space-3);
+  -webkit-overflow-scrolling: touch;
+}
+.map-svg { max-width: none; }
+.map-node { cursor: pointer; }
+.map-node rect:first-of-type {
+  transition: filter var(--dur) var(--ease-out);
+}
+/* Darkening reads as hover on paper; on a dark ground it has to lighten. */
+.map-node:hover rect:first-of-type { filter: brightness(0.97); }
+:root[data-theme="dark"] .map-node:hover rect:first-of-type { filter: brightness(1.35); }
+.map-node:focus-visible { outline: none; }
+.map-node:focus-visible rect:first-of-type {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.map-legend { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+.map-legend-item i {
+  width: 8px; height: 8px;
+  border-radius: var(--radius-full);
+  display: block;
+}
+
+/* --- Progress ------------------------------------------------------------ */
+.distribution {
+  display: flex;
+  height: 8px;
+  gap: 2px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.distribution i { display: block; height: 100%; transition: width var(--dur-slow) var(--ease-out); }
+.assessment-card { border-left: 2px solid var(--chalk-line-strong); }
+
+/* --- Settings ------------------------------------------------------------ */
+.status-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--chalk-line);
+}
+.status-row:last-child { border-bottom: none; }
+.status-row .strong { font-size: var(--text-sm); }
+
+.choice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.choice:hover { background: var(--chalk-sunk); }
+.choice input { margin-top: 3px; flex: none; accent-color: var(--ink); }
+
+/* --- Ask ----------------------------------------------------------------- */
+.ask-answer {
+  padding: var(--space-4);
+  background: var(--chalk);
+  border-radius: var(--radius-md);
+  border-left: 2px solid var(--brass);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+/* --- Welcome ------------------------------------------------------------- */
+.welcome {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 68rem;
+  margin-inline: auto;
+  padding: var(--space-7) var(--space-5);
+}
+.welcome-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-7) var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--night);
+  box-shadow: var(--shadow-night);
+  --floor: var(--brass);
+}
+.welcome-figure .resonance { width: min(14rem, 40vw); }
+.welcome-hear {
+  background: transparent;
+  color: var(--night-soft);
+  border: 1px solid var(--night-line);
+}
+.welcome-hear:hover:not(:disabled) { background: var(--night-raised); color: var(--night-text); }
+
+.welcome-steps { display: grid; gap: var(--space-5); }
+.welcome-steps li { display: flex; gap: var(--space-4); align-items: flex-start; }
+.welcome-step-number {
+  flex: none;
+  width: 1.75rem; height: 1.75rem;
+  display: grid; place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--chalk-sunk);
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.welcome-steps h3 { font-size: var(--text-md); margin-bottom: var(--space-1); }
+.welcome-steps p { font-size: var(--text-sm); margin: 0; }
+
+@media (max-width: 860px) {
+  .welcome { grid-template-columns: 1fr; gap: var(--space-6); padding-top: var(--space-6); }
+  .welcome-figure { padding: var(--space-5); }
+  .welcome-figure .resonance { width: min(10rem, 44vw); }
+}
+
+/* --- Small screens -------------------------------------------------------- */
+@media (max-width: 640px) {
+  .card, .card-feature { padding: var(--space-4); }
+  .card-feature { border-radius: var(--radius-lg); }
+  .dropzone { padding: var(--space-5) var(--space-4); }
+  .dropzone .btn { width: 100%; }
+  .plan-next { flex-direction: column; align-items: stretch; }
+  .plan-next .btn { width: 100%; }
+  .row-item { padding-inline: 0; }
+}
+
+/* -------------------------------------------------------------------------
+   What a document is for.
+
+   The tag reads as a label, not a form control, because most of the time the
+   guess is right and the student is only glancing at it. The select sits
+   invisibly on top so correcting it is one click, and keyboard and screen
+   reader users get a real <select> rather than a menu we invented.
+   ---------------------------------------------------------------------- */
+.role-chip {
+  position: relative;
+  padding-right: 1.4rem;
+  cursor: pointer;
+}
+.role-chip::after {
+  content: "";
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  width: 0.34rem; height: 0.34rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-70%) rotate(45deg);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.role-chip:hover { background: var(--chalk-sunk); }
+.role-select {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.role-select:focus-visible + *, .role-chip:has(.role-select:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+/* Past papers, mark schemes and the syllabus each unlock a mode, so they are
+   worth telling apart at a glance. Notes stay quiet: they are the default. */
+.role-past_paper { color: var(--brass-deep); border-color: var(--brass-line); }
+.role-mark_scheme { color: var(--mint-deep, var(--brass-deep)); border-color: var(--mint-line); }
+.role-syllabus { color: var(--accent, var(--ink-soft)); }
+
+/* -------------------------------------------------------------------------
+   Ways of working.
+
+   Sixteen modes on one screen, including the ones still being built. The
+   grid is deliberately plain: this is a list a stressed person scans, not a
+   gallery. State is carried by one colour and one word, never by colour
+   alone, and a mode that does not exist yet is visibly quieter than one that
+   does without being so faint it cannot be read.
+   ---------------------------------------------------------------------- */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--chalk-line);
+  border-radius: var(--radius-lg);
+  background: var(--chalk-raised);
+  transition: border-color var(--dur) var(--ease-out), background-color var(--dur) var(--ease-out);
+}
+.mode-card:has(.mode-switch:hover),
+.mode-card:has(.mode-switch:focus-visible) { border-color: var(--ink-faint); }
+.mode-card:has(.mode-switch:focus-visible) { box-shadow: var(--focus-ring); }
+
+.mode-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mode-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem; height: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--chalk-sunk);
+  color: var(--ink-soft);
+  flex: none;
+}
+
+.mode-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-snug);
+  min-width: 0;
+}
+/* The whole card is the hit target: the label stretches over it. */
+label.mode-name::after { content: ""; position: absolute; inset: 0; cursor: pointer; }
+
+.mode-state {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.mode-blurb {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--ink-soft);
+}
+.mode-note {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+/* The switch sits under the card and is reached by the label, so it keeps
+   real checkbox semantics and keyboard behaviour. */
+.mode-switch {
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.mode-card[data-state="on"] { border-color: var(--brass-line); }
+.mode-card[data-state="on"] .mode-icon { background: var(--brass-wash, var(--chalk-sunk)); color: var(--brass-deep); }
+.mode-card[data-state="on"] .mode-state { color: var(--brass-deep); }
+
+.mode-card[data-state="off"] .mode-icon,
+.mode-card[data-state="off"] .mode-name { opacity: 0.65; }
+
+.mode-card[data-state="blocked"] .mode-state { color: var(--trouble-text); }
+
+.mode-card[data-state="coming"] {
+  background: transparent;
+  border-style: dashed;
+}
+.mode-card[data-state="coming"] .mode-icon { opacity: 0.5; }

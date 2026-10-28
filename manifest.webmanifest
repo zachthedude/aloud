@@ -1,0 +1,20 @@
+{
+  "name": "Aloud",
+  "short_name": "Aloud",
+  "description": "Your own study material, taught out loud, with questions you answer by speaking.",
+  "start_url": "/aloud/app",
+  "scope": "/aloud/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#efefea",
+  "theme_color": "#efefea",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/aloud/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/aloud/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ways of working", "url": "/aloud/modes" },
+    { "name": "Study plan", "url": "/aloud/plan" }
+  ]
+}

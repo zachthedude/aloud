@@ -1,0 +1,237 @@
+/* =========================================================================
+   Landing page.
+
+   Six screens, one idea each, over one long sound wave. The wave does the
+   decorating, so everything in front of it stays plain: centred type, lots of
+   room, and nothing boxed in.
+   ========================================================================= */
+
+.landing { position: relative; }
+
+/* The wave behind the page. Faint, so it never competes with the words. */
+.wave-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  color: var(--ink);
+  --wave-played: var(--brass);
+  --wave-ahead-alpha: 0.075;
+  --wave-played-alpha: 0.26;
+}
+:root[data-theme="dark"] .wave-backdrop {
+  --wave-ahead-alpha: 0.1;
+  --wave-played-alpha: 0.22;
+}
+.wave-canvas { display: block; width: 100%; height: 100%; }
+
+.landing > :not(.wave-backdrop) { position: relative; z-index: 1; }
+
+.landing-nav {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  padding: var(--space-5) 0;
+}
+
+/* --- Screens ------------------------------------------------------------- */
+.screen {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-10) var(--space-5);
+  text-align: center;
+}
+.screen-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 46rem);
+}
+
+.screen-eyebrow {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.screen-title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 5.2vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+.screen-title-hero { font-size: clamp(2.3rem, 6.4vw, 4.6rem); max-width: none; }
+.screen-title-line { display: block; }
+/* The rotating words share one cell sized to the longest, so each sits at its
+   start rather than floating in the middle of the cell. */
+.screen-title-hero .rotator-word { text-align: left; }
+
+.screen-lede {
+  margin: var(--space-6) 0 0;
+  max-width: 34ch;
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+
+.screen-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+/* What the sample lesson is saying, while it says it. */
+.screen-caption {
+  margin: var(--space-6) 0 0;
+  min-height: 3em;
+  max-width: 36ch;
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* --- Three steps --------------------------------------------------------- */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-7);
+  width: min(100vw - 2 * var(--space-5), 58rem);
+  margin: var(--space-9) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.steps li { counter-increment: step; }
+.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  margin-bottom: var(--space-3);
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  color: var(--brass-deep);
+}
+.steps h3 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+}
+.steps p {
+  margin: 0 auto;
+  max-width: 22ch;
+  color: var(--ink-soft);
+  line-height: var(--leading-relaxed);
+}
+@media (max-width: 760px) {
+  .steps { grid-template-columns: 1fr; gap: var(--space-8); }
+}
+
+.landing-foot { padding: var(--space-6) 0 var(--space-7); }
+
+@media (max-width: 600px) {
+  .screen { padding-inline: var(--space-4); }
+  .screen-actions { flex-direction: column; align-items: stretch; width: min(100%, 20rem); }
+}
+
+/* --- Auth ---------------------------------------------------------------- */
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.auth-aside {
+  background: var(--night);
+  color: var(--night-text);
+  padding: var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  --floor: var(--brass);
+  position: relative;
+  overflow: hidden;
+}
+.auth-aside::before {
+  content: "";
+  position: absolute; inset: 0 0 auto; height: 60%;
+  background: radial-gradient(110% 90% at 30% 0%, var(--brass-glow) 0%, transparent 70%);
+  opacity: 0.55;
+}
+.auth-aside > * { position: relative; z-index: 1; }
+.auth-aside .resonance { width: min(12rem, 30vw); }
+.auth-aside h2 {
+  font-size: var(--text-2xl);
+  color: var(--night-text);
+  max-width: 18ch;
+  line-height: 1.15;
+}
+.auth-aside p { color: var(--night-soft); max-width: 40ch; font-size: var(--text-sm); }
+
+.auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5);
+}
+.auth-form { width: min(24rem, 100%); }
+.auth-form h1 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+
+@media (max-width: 860px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-aside { display: none; }
+}
+
+/* -------------------------------------------------------------------------
+   The rotating word.
+
+   Every word occupies the same grid cell, so the headline never reflows as
+   they swap. The motion is a short rise: the outgoing word leaves upward and
+   the incoming one arrives from below, which reads as a list being turned
+   rather than as text glitching.
+   ---------------------------------------------------------------------- */
+.rotator {
+  display: inline-grid;
+  vertical-align: baseline;
+  /* Clipped so a word in flight cannot sit on the line above or below. */
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.rotator-stack { display: grid; }
+.rotator-word {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  color: var(--brass-deep);
+  font-style: italic;
+  transition: transform 480ms var(--ease-spring), opacity 280ms var(--ease-out);
+}
+.rotator-word[data-state="in"]    { transform: translateY(0);      opacity: 1; }
+.rotator-word[data-state="below"] { transform: translateY(0.9em);  opacity: 0; }
+.rotator-word[data-state="above"] { transform: translateY(-0.9em); opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rotator-word { transition: none; }
+}
+
+/* The dot field sits behind everything in the panel it decorates. */
+.dotfield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
