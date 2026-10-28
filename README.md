@@ -13,6 +13,13 @@ RESOURCE -> UNDERSTAND -> PLAN -> TEACH -> ASK -> LISTEN -> EVALUATE -> ADAPT ->
 
 ---
 
+## Live demo
+
+https://zachthedude.github.io/aloud/ runs the real FastAPI server inside your browser
+with Pyodide (`web/js/demo.js`), seeded with the sample subject. Sign in as
+`student@aloud.app` / `learnaloud`. Rebuild and publish with
+`python tools/build_pages.py --push`.
+
 ## Running it
 
 Python 3.11 or newer. No Node, no build step.

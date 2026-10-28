@@ -9,6 +9,8 @@
  * can introduce an injection: user and AI text never becomes markup.
  */
 
+import { withBase } from './router.js';
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 // Anything missing here is silently created as an HTML element inside the SVG,
 // where it renders nothing. Camel-cased names matter: createElementNS keeps
@@ -58,6 +60,8 @@ export function h(tag, props, ...children) {
         // Only ever called with markup this codebase authored, never with
         // text from a user, a document or the teacher.
         element.innerHTML = value;
+      } else if (key === 'href' && typeof value === 'string') {
+        element.setAttribute('href', withBase(value));
       } else if (value === true) {
         element.setAttribute(key, '');
       } else {

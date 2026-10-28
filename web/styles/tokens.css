@@ -21,8 +21,8 @@
    was not already required.
    ========================================================================= */
 
-@import url("/assets/fonts/newsreader.css");
-@import url("/assets/fonts/figtree.css");
+@import url("../assets/fonts/newsreader.css");
+@import url("../assets/fonts/figtree.css");
 
 :root {
   /* --- Ground ---------------------------------------------------------- */

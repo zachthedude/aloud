@@ -6,6 +6,14 @@
  * bookmarked.
  */
 
+// Where the app is served from: '' at a server root, '/aloud' on GitHub Pages.
+// Routes are written root-relative; only the address bar carries the prefix.
+export const BASE = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
+export const withBase = (path) =>
+  BASE && path.startsWith('/') && !path.startsWith('//') && !path.startsWith(BASE + '/') && path !== BASE
+    ? BASE + path
+    : path;
+
 const routes = [];
 let onNavigate = null;
 let current = { path: '/', params: {}, query: new URLSearchParams() };
@@ -44,6 +52,7 @@ export function resolve(path) {
 }
 
 export function navigate(path, { replace = false, state = {} } = {}) {
+  path = withBase(path);
   if (path === location.pathname + location.search) {
     return render();
   }
@@ -77,7 +86,7 @@ export async function render() {
     }
   }
 
-  const path = location.pathname || '/';
+  const path = location.pathname.slice(BASE.length) || '/';
   const query = new URLSearchParams(location.search);
   const match = resolve(path);
 

@@ -5,3 +5,4 @@ __pycache__/
 .env
 tools/screenshots/
 .venv/
+_site/

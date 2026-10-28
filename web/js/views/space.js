@@ -9,7 +9,7 @@
 import { h, icon, focus } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { store } from '../core/store.js';
-import { navigate } from '../core/router.js';
+import { navigate, withBase } from '../core/router.js';
 import { lessonPlayer } from '../core/lessonplayer.js';
 import { resonanceMark } from '../core/resonance.js';
 import { uploader, resourceCard } from '../components/uploader.js';
@@ -598,7 +598,7 @@ export async function spaceView(mountPoint, spaceId, query, rerender) {
                 role: 'tab',
                 'aria-selected': String(item.id === activeTab),
                 onClick: () => {
-                  history.replaceState({}, '', `/space/${spaceId}?view=${item.id}`);
+                  history.replaceState({}, '', withBase(`/space/${spaceId}?view=${item.id}`));
                   render(payload, item.id);
                 },
               },
